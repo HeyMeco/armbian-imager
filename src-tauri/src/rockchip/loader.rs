@@ -1,22 +1,28 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2026 Daniele Briguglio, superkali@armbian.com
 
-//! Fetches and parses the rkbin SPL loader a board in Maskrom needs (DRAM init in 0x471, usbplug
-//! in 0x472). Downloaded on first use from a pinned armbian/rkbin commit, never bundled: the blobs
-//! are Rockchip-licensed binaries. Every copy, cached or fresh, must match the pinned SHA-256.
+//! Fetches and assembles the rkbin loader a board in Maskrom needs (DRAM init in 0x471, usbplug in
+//! 0x472): a merged boot file, or the two blobs behind a generated RKNS header. Downloaded on first
+//! use from pinned rkbin commits, never bundled: the blobs are Rockchip-licensed binaries. Every
+//! copy, cached or fresh, must match the pinned SHA-256.
 
 use std::path::PathBuf;
 
 use rockfile::boot::{RkBootEntry, RkBootHeader, RkBootHeaderEntry};
 
-use super::socs::RockchipSoc;
+use sha2::{Digest, Sha256};
+
+use super::socs::{LoaderBlob, LoaderSource, Rkbin, RockchipSoc};
 use super::TAG_ROCKUSB_LOADER_UNAVAILABLE;
 use crate::config;
 use crate::utils::{fetch_to_file, loaders_dir};
 use crate::{log_info, log_warn};
 
-/// armbian/rkbin commit the loader digests in `socs::SOCS` were taken from.
+/// armbian/rkbin commit the Armbian digests in `socs::SOCS` were taken from.
 pub const RKBIN_COMMIT: &str = "30eb694ecb4afa1ca3ec1e4c5e477a81f7004e7e";
+
+/// rockchip-linux/rkbin commit the Rockchip digests in `socs::SOCS` were taken from.
+pub const ROCKCHIP_RKBIN_COMMIT: &str = "3e288fe814e059dd06833495f845cab04ac20a5c";
 
 /// Cache subdirectory of `loaders_dir()` (QDL families live beside it).
 const CACHE_SUBDIR: &str = "rockchip";
@@ -38,17 +44,49 @@ pub struct LoaderEntry {
     pub delay_ms: u32,
 }
 
-fn loader_url(soc: &RockchipSoc) -> String {
-    format!(
-        "{}{RKBIN_COMMIT}/{}",
-        config::urls::RKBIN_RAW_BASE,
-        soc.loader.rel
-    )
+fn blob_url(blob: &LoaderBlob) -> String {
+    let (base, commit) = match blob.repo {
+        Rkbin::Armbian => (config::urls::RKBIN_RAW_BASE, RKBIN_COMMIT),
+        Rkbin::RockchipLinux => (config::urls::ROCKCHIP_RKBIN_RAW_BASE, ROCKCHIP_RKBIN_COMMIT),
+    };
+    format!("{base}{commit}/{}", blob.rel)
 }
 
-fn cache_path(soc: &RockchipSoc) -> PathBuf {
-    let file = soc.loader.rel.rsplit('/').next().unwrap_or(soc.loader.rel);
+fn cache_path(blob: &LoaderBlob) -> PathBuf {
+    let file = blob.rel.rsplit('/').next().unwrap_or(blob.rel);
     loaders_dir().join(CACHE_SUBDIR).join(file)
+}
+
+/// The pinned file's bytes, from the cache or a fresh download; both must match its SHA-256.
+async fn fetch_blob(blob: &LoaderBlob) -> Result<Vec<u8>, String> {
+    let path = cache_path(blob);
+    let check = |bytes: &[u8]| crate::qdl::registry::verify_digest(bytes, Some(blob.sha256));
+    if let Ok(bytes) = std::fs::read(&path) {
+        match check(&bytes) {
+            Ok(()) => {
+                log_info!("rockchip::loader", "Using cached {}", path.display());
+                return Ok(bytes);
+            }
+            Err(e) => log_warn!(
+                "rockchip::loader",
+                "Cached {} rejected, downloading again: {}",
+                path.display(),
+                e
+            ),
+        }
+    }
+    let url = blob_url(blob);
+    log_info!("rockchip::loader", "Downloading {}", url);
+    fetch_to_file(&url, &path, check)
+        .await
+        .map_err(|e| format!("{TAG_ROCKUSB_LOADER_UNAVAILABLE} {e}"))?;
+    let bytes = std::fs::read(&path).map_err(|e| {
+        format!(
+            "{TAG_ROCKUSB_LOADER_UNAVAILABLE} Failed to read {}: {e}",
+            path.display()
+        )
+    })?;
+    check(&bytes).map(|()| bytes)
 }
 
 /// Debug builds only: load this boot file instead of the pinned one, to try a newer loader on hardware.
@@ -87,43 +125,95 @@ pub async fn ensure_loader(soc: &'static RockchipSoc) -> Result<Vec<LoaderEntry>
     if let Some(entries) = override_loader(soc) {
         return entries;
     }
-    let path = cache_path(soc);
-    if let Ok(bytes) = std::fs::read(&path) {
-        match validate(&bytes, soc) {
-            Ok(entries) => {
-                log_info!(
-                    "rockchip::loader",
-                    "Using cached loader: {}",
-                    path.display()
-                );
-                return Ok(entries);
-            }
-            Err(e) => log_warn!(
-                "rockchip::loader",
-                "Cached loader {} rejected, downloading again: {}",
-                path.display(),
-                e
-            ),
+    match &soc.loader {
+        LoaderSource::Merged(blob) => {
+            let bytes = fetch_blob(blob).await?;
+            merged_entries(&bytes, soc).map_err(|e| format!("{TAG_ROCKUSB_LOADER_UNAVAILABLE} {e}"))
+        }
+        LoaderSource::Split { ddr, usbplug } => {
+            let ddr = fetch_blob(ddr).await?;
+            let usbplug = fetch_blob(usbplug).await?;
+            Ok(split_entries(&ddr, &usbplug))
         }
     }
-
-    let url = loader_url(soc);
-    log_info!("rockchip::loader", "Downloading loader: {}", url);
-    fetch_to_file(&url, &path, |bytes| validate(bytes, soc).map(|_| ()))
-        .await
-        .map_err(|e| format!("{TAG_ROCKUSB_LOADER_UNAVAILABLE} {e}"))?;
-    let bytes = std::fs::read(&path).map_err(|e| {
-        format!("{TAG_ROCKUSB_LOADER_UNAVAILABLE} Failed to read cached loader: {e}")
-    })?;
-    validate(&bytes, soc)
 }
 
-/// Pinned digest first, then the header must name this SoC and carry both stages.
-fn validate(bytes: &[u8], soc: &RockchipSoc) -> Result<Vec<LoaderEntry>, String> {
-    crate::qdl::registry::verify_digest(bytes, Some(soc.loader.sha256))?;
+/// A merged boot file's stages, once its header names this SoC.
+fn merged_entries(bytes: &[u8], soc: &RockchipSoc) -> Result<Vec<LoaderEntry>, String> {
     let (header, entries) = parse_loader(bytes)?;
     check_chip(&header, soc)?;
     Ok(entries)
+}
+
+/// boot_merger's alignment for new-IDB images (`ALIGN=8` sectors).
+const RKNS_ALIGN: usize = 4096;
+const RKNS_HEADER_BYTES: usize = 4096;
+/// Header size field, as boot_merger writes it (0x180).
+const RKNS_HEADER_SIZE_FIELD: u32 = 0x180;
+const RKNS_IMAGE_ENTRIES_AT: usize = 120;
+const RKNS_IMAGE_ENTRY_BYTES: usize = 88;
+const RKNS_IMAGE_HASH_AT: usize = 24;
+const RKNS_HEADER_HASH_AT: usize = 1536;
+/// Byte 97: 0 in boot_merger output before late 2024, 1 since; undocumented, so the newer value.
+const RKNS_FLAG_AT: usize = 97;
+
+fn pad_to(data: &[u8], align: usize) -> Vec<u8> {
+    let mut out = data.to_vec();
+    out.resize(data.len().div_ceil(align) * align, 0);
+    out
+}
+
+/// The RKNS ("UsbHead") header boot_merger puts in front of new-IDB 0x471 uploads: each image's
+/// sector size and offset, a SHA-256 per image, and a SHA-256 over the header. Checked byte for
+/// byte against the armbian/rkbin RK3576 v1.03 and Radxa v1.09 merged loaders.
+pub fn rkns_header(images: &[&[u8]], flag: u8) -> Vec<u8> {
+    let mut h = vec![0u8; RKNS_HEADER_BYTES];
+    h[..4].copy_from_slice(b"RKNS");
+    h[8..12]
+        .copy_from_slice(&(RKNS_HEADER_SIZE_FIELD | ((images.len() as u32) << 16)).to_le_bytes());
+    h[12..16].copy_from_slice(&1u32.to_le_bytes()); // SHA-256 digests
+    h[RKNS_FLAG_AT] = flag;
+    let mut offset = (RKNS_HEADER_BYTES / 512) as u32;
+    for (k, image) in images.iter().enumerate() {
+        let sectors = (image.len() / 512) as u32;
+        let at = RKNS_IMAGE_ENTRIES_AT + RKNS_IMAGE_ENTRY_BYTES * k;
+        h[at..at + 4].copy_from_slice(&((sectors << 16) | offset).to_le_bytes());
+        h[at + 4..at + 8].copy_from_slice(&u32::MAX.to_le_bytes()); // no load address
+        h[at + 12..at + 16].copy_from_slice(&(k as u32 + 1).to_le_bytes());
+        h[at + RKNS_IMAGE_HASH_AT..at + RKNS_IMAGE_HASH_AT + 32]
+            .copy_from_slice(&Sha256::digest(image));
+        offset += sectors;
+    }
+    let digest = Sha256::digest(&h[..RKNS_HEADER_HASH_AT]);
+    h[RKNS_HEADER_HASH_AT..RKNS_HEADER_HASH_AT + 32].copy_from_slice(&digest);
+    h
+}
+
+/// The upload boot_merger would produce from the two blobs: header + DDR init on 0x471, usbplug on 0x472.
+fn split_entries(ddr: &[u8], usbplug: &[u8]) -> Vec<LoaderEntry> {
+    let ddr = pad_to(ddr, RKNS_ALIGN);
+    let usbplug = pad_to(usbplug, RKNS_ALIGN);
+    let head = rkns_header(&[&ddr, &usbplug], 1);
+    vec![
+        LoaderEntry {
+            area: AREA_DRAM_INIT,
+            name: "UsbHead".into(),
+            data: head,
+            delay_ms: 1,
+        },
+        LoaderEntry {
+            area: AREA_DRAM_INIT,
+            name: "ddr".into(),
+            data: ddr,
+            delay_ms: 1,
+        },
+        LoaderEntry {
+            area: AREA_USBPLUG,
+            name: "usbplug".into(),
+            data: usbplug,
+            delay_ms: 0,
+        },
+    ]
 }
 
 fn check_chip(header: &RkBootHeader, soc: &RockchipSoc) -> Result<(), String> {
@@ -263,27 +353,127 @@ mod tests {
     }
 
     #[test]
-    fn a_digest_mismatch_is_refused_before_parsing() {
-        let soc = crate::rockchip::socs::find_by_maskrom_pid(0x350b).unwrap();
+    fn a_merged_loader_must_name_the_soc() {
+        let rk3588 = crate::rockchip::socs::find_by_maskrom_pid(0x350b).unwrap();
+        let rk3399 = crate::rockchip::socs::find_by_maskrom_pid(0x330c).unwrap();
         let file = sample_loader(b"3588", b"dram-init", b"usbplug!");
-        assert!(validate(&file, soc)
+        assert!(merged_entries(&file, rk3588).is_ok());
+        assert!(merged_entries(&file, rk3399)
             .unwrap_err()
-            .contains("SHA-256 mismatch"));
+            .contains("not RK3399"));
     }
 
     #[test]
-    fn urls_point_at_the_pinned_commit() {
-        let soc = crate::rockchip::socs::find_by_maskrom_pid(0x350b).unwrap();
+    fn urls_point_at_the_pinned_commits() {
+        let LoaderSource::Merged(rk3588) = &crate::rockchip::socs::find_by_maskrom_pid(0x350b)
+            .unwrap()
+            .loader
+        else {
+            panic!("RK3588 uses a merged loader");
+        };
         assert_eq!(
-            loader_url(soc),
-            format!(
-                "https://raw.githubusercontent.com/armbian/rkbin/{RKBIN_COMMIT}/rk35/rk3588_spl_loader_v1.16.113.bin"
-            )
+            blob_url(rk3588),
+            format!("https://raw.githubusercontent.com/armbian/rkbin/{RKBIN_COMMIT}/rk35/rk3588_spl_loader_v1.16.113.bin")
         );
-        assert!(cache_path(soc).ends_with("rockchip/rk3588_spl_loader_v1.16.113.bin"));
+        assert!(cache_path(rk3588).ends_with("rockchip/rk3588_spl_loader_v1.16.113.bin"));
+
+        let LoaderSource::Split { usbplug, .. } =
+            &crate::rockchip::socs::find_by_maskrom_pid(0x350e)
+                .unwrap()
+                .loader
+        else {
+            panic!("RK3576 uses split blobs");
+        };
+        assert_eq!(
+            blob_url(usbplug),
+            format!("https://raw.githubusercontent.com/rockchip-linux/rkbin/{ROCKCHIP_RKBIN_COMMIT}/bin/rk35/rk3576_usbplug_v1.04.bin")
+        );
     }
 
-    // Downloads every pinned loader and checks digest, header and chip tag:
+    #[test]
+    fn rkns_header_describes_each_padded_image() {
+        let ddr = pad_to(&[1u8; 5000], RKNS_ALIGN);
+        let plug = pad_to(&[2u8; 9000], RKNS_ALIGN);
+        assert_eq!((ddr.len(), plug.len()), (8192, 12288));
+        let h = rkns_header(&[&ddr, &plug], 1);
+        let u32_at = |at: usize| u32::from_le_bytes(h[at..at + 4].try_into().unwrap());
+
+        assert_eq!(h.len(), 4096);
+        assert_eq!(&h[..4], b"RKNS");
+        assert_eq!(u32_at(8), 0x0002_0180);
+        assert_eq!(u32_at(12), 1);
+        assert_eq!(h[RKNS_FLAG_AT], 1);
+        // DDR at sector 8 (after the header), 16 sectors; usbplug right behind it, 24 sectors.
+        assert_eq!(u32_at(120), (16 << 16) | 8);
+        assert_eq!(u32_at(208), (24 << 16) | 24);
+        assert_eq!(u32_at(124), u32::MAX);
+        assert_eq!((u32_at(132), u32_at(220)), (1, 2));
+        assert_eq!(&h[144..176], Sha256::digest(&ddr).as_slice());
+        assert_eq!(&h[232..264], Sha256::digest(&plug).as_slice());
+        assert_eq!(&h[1536..1568], Sha256::digest(&h[..1536]).as_slice());
+        assert!(h[1568..].iter().all(|b| *b == 0));
+    }
+
+    #[test]
+    fn split_upload_is_header_ddr_then_usbplug() {
+        let entries = split_entries(&[1u8; 100], &[2u8; 100]);
+        let shape: Vec<(u16, &str, usize, u32)> = entries
+            .iter()
+            .map(|e| (e.area, e.name.as_str(), e.data.len(), e.delay_ms))
+            .collect();
+        assert_eq!(
+            shape,
+            [
+                (AREA_DRAM_INIT, "UsbHead", 4096, 1),
+                (AREA_DRAM_INIT, "ddr", 4096, 1),
+                (AREA_USBPLUG, "usbplug", 4096, 0)
+            ]
+        );
+    }
+
+    // Rebuilds the armbian/rkbin RK3576 v1.03 merged loader's upload from its raw blobs and compares
+    // byte for byte (the older boot_merger wrote flag 0): `cargo test split_upload_matches -- --ignored`.
+    #[tokio::test]
+    #[ignore = "downloads from raw.githubusercontent.com"]
+    async fn split_upload_matches_boot_merger_output() {
+        let get = |rel: &'static str, sha256: &'static str| LoaderBlob {
+            repo: Rkbin::Armbian,
+            rel,
+            sha256,
+        };
+        let merged = fetch_blob(&get(
+            "rk35/rk3576_spl_loader_v1.03.102.bin",
+            "744af15f17fbd0849bbd75ce71f4fa7834d55ffb2acae8a05d3aaf95b8754aff",
+        ))
+        .await
+        .unwrap();
+        let ddr = fetch_blob(&get(
+            "rk35/rk3576_ddr_lp4_2112MHz_lp5_2736MHz_v1.03.bin",
+            "93fe6770ce70214cda882d4360da5485bb998f98871df3f070af62e33d29cf23",
+        ))
+        .await;
+        let (_, expected) = parse_loader(&merged).unwrap();
+        let ddr = ddr.unwrap();
+        let usbplug = fetch_blob(&get(
+            "rk35/rk3576_usbplug_v1.01.bin",
+            "b73c4c93f6ab749cd9788f4f670b636ba4b6b1be5f6bc75e4f3ad549df4b7984",
+        ))
+        .await
+        .unwrap();
+        let mut built = split_entries(&ddr, &usbplug);
+        built[0].data = rkns_header(&[&built[1].data, &built[2].data], 0);
+        for (b, e) in built.iter().zip(&expected) {
+            assert_eq!(
+                (b.area, b.data.len(), b.delay_ms),
+                (e.area, e.data.len(), e.delay_ms),
+                "{}",
+                e.name
+            );
+            assert!(b.data == e.data, "{} differs", e.name);
+        }
+    }
+
+    // Downloads every pinned loader blob and checks digests, headers and chip tags:
     // `cargo test pinned_loaders_download_and_validate -- --ignored`.
     #[tokio::test]
     #[ignore = "downloads from raw.githubusercontent.com"]

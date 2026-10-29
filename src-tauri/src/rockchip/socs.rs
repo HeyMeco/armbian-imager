@@ -5,12 +5,42 @@
 //! and the pinned rkbin SPL loader that brings it up to Loader mode. Loader mode itself needs no
 //! entry here; any SoC already running usbplug or U-Boot rockusb can be written.
 
-/// One pinned SPL loader in armbian/rkbin (see `loader::RKBIN_COMMIT`).
+/// The rkbin repository a blob is pinned in; each has its own commit in `loader`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Rkbin {
+    Armbian,
+    RockchipLinux,
+}
+
+/// One pinned rkbin file.
 pub struct LoaderBlob {
+    pub repo: Rkbin,
     /// Path inside the rkbin repo
     pub rel: &'static str,
     /// SHA-256 of the file at the pinned commit; a download that differs is refused
     pub sha256: &'static str,
+}
+
+/// How a SoC's Maskrom upload is put together.
+pub enum LoaderSource {
+    /// A merged boot file (boot_merger output) carrying both stages.
+    Merged(LoaderBlob),
+    /// The DDR init and usbplug blobs, uploaded behind a generated RKNS header the way boot_merger
+    /// lays them out (RK35xx new-IDB boot ROMs).
+    Split {
+        ddr: LoaderBlob,
+        usbplug: LoaderBlob,
+    },
+}
+
+#[cfg(test)]
+impl LoaderSource {
+    pub fn blobs(&self) -> Vec<&LoaderBlob> {
+        match self {
+            LoaderSource::Merged(blob) => vec![blob],
+            LoaderSource::Split { ddr, usbplug } => vec![ddr, usbplug],
+        }
+    }
 }
 
 pub struct RockchipSoc {
@@ -22,40 +52,51 @@ pub struct RockchipSoc {
     pub maskrom_pid: u16,
     /// Chip tag as the loader header's `supported_chip` carries it (and, read the same way, ChipInfo)
     pub chip_tag: [u8; 4],
-    pub loader: LoaderBlob,
+    pub loader: LoaderSource,
 }
 
-/// Maskrom PIDs from xrock's chip table (RK3528 from `lsusb` of a board in Maskrom);
-/// loaders and digests from armbian/rkbin at the pinned commit.
+/// Maskrom PIDs from xrock's chip table (RK3528 from `lsusb` of a board in Maskrom); loaders and
+/// digests from the pinned rkbin commits. RK3576 temporarily takes rockchip-linux blobs: the merged
+/// loader in armbian/rkbin carries usbplug v1.01, whose UFS commands past 32 MiB fail silently.
 pub const SOCS: &[RockchipSoc] = &[
     RockchipSoc {
         name: "RK3588",
         tokens: &["RK3588", "RK3582", "RK3583"],
         maskrom_pid: 0x350b,
         chip_tag: *b"3588",
-        loader: LoaderBlob {
+        loader: LoaderSource::Merged(LoaderBlob {
+            repo: Rkbin::Armbian,
             rel: "rk35/rk3588_spl_loader_v1.16.113.bin",
             sha256: "4cc43c2ff29e08b5491b4d52528346aa7da6948128c17e670ff8a000029c9408",
-        },
+        }),
     },
     RockchipSoc {
         name: "RK3566/RK3568",
         tokens: &["RK3566", "RK3568"],
         maskrom_pid: 0x350a,
         chip_tag: *b"3568",
-        loader: LoaderBlob {
+        loader: LoaderSource::Merged(LoaderBlob {
+            repo: Rkbin::Armbian,
             rel: "rk35/rk356x_spl_loader_v1.21.113.bin",
             sha256: "aaa3f13c84275bb864e78b5dec29fcce43dec2898ecac6696a06f14a3dec679e",
-        },
+        }),
     },
     RockchipSoc {
         name: "RK3576",
         tokens: &["RK3576"],
         maskrom_pid: 0x350e,
         chip_tag: *b"3576",
-        loader: LoaderBlob {
-            rel: "rk35/rk3576_spl_loader_v1.03.102.bin",
-            sha256: "744af15f17fbd0849bbd75ce71f4fa7834d55ffb2acae8a05d3aaf95b8754aff",
+        loader: LoaderSource::Split {
+            ddr: LoaderBlob {
+                repo: Rkbin::RockchipLinux,
+                rel: "bin/rk35/rk3576_ddr_lp4_2112MHz_lp5_2736MHz_v1.13.bin",
+                sha256: "f697151bdd09d31bf7a1e49d63796a6a200e81bf8f9a766c2e95c840e88fc0ce",
+            },
+            usbplug: LoaderBlob {
+                repo: Rkbin::RockchipLinux,
+                rel: "bin/rk35/rk3576_usbplug_v1.04.bin",
+                sha256: "77238d47f10e84844d95707024b8171fc9f198e19ad6500f5e8a5810ca6c680b",
+            },
         },
     },
     RockchipSoc {
@@ -63,30 +104,33 @@ pub const SOCS: &[RockchipSoc] = &[
         tokens: &["RK3528"],
         maskrom_pid: 0x350c,
         chip_tag: *b"3528",
-        loader: LoaderBlob {
+        loader: LoaderSource::Merged(LoaderBlob {
+            repo: Rkbin::Armbian,
             rel: "rk35/rk3528_spl_loader_v1.07.104.bin",
             sha256: "a45957495e21136736f312b94ada0f859ec4fad432f2810283da35f027ec41ca",
-        },
+        }),
     },
     RockchipSoc {
         name: "RK3399",
         tokens: &["RK3399"],
         maskrom_pid: 0x330c,
         chip_tag: *b"330C",
-        loader: LoaderBlob {
+        loader: LoaderSource::Merged(LoaderBlob {
+            repo: Rkbin::Armbian,
             rel: "rk33/rk3399_loader_v1.30.130.bin",
             sha256: "c3333e65e2262f91880d62c76d25f4f47dc0f127c96d2df25e3400a826479118",
-        },
+        }),
     },
     RockchipSoc {
         name: "RK3328",
         tokens: &["RK3328"],
         maskrom_pid: 0x320c,
         chip_tag: *b"322H",
-        loader: LoaderBlob {
+        loader: LoaderSource::Merged(LoaderBlob {
+            repo: Rkbin::Armbian,
             rel: "rk33/rk3328_loader_ddr333_v1.08.244.bin",
             sha256: "c343691af5c5099e332a02732727e572f2239621ba92e5191bb39d4cb9896a7b",
-        },
+        }),
     },
 ];
 
@@ -140,9 +184,11 @@ mod tests {
     #[test]
     fn every_loader_digest_is_a_sha256() {
         for soc in SOCS {
-            assert_eq!(soc.loader.sha256.len(), 64, "{}", soc.name);
-            assert!(hex::decode(soc.loader.sha256).is_ok(), "{}", soc.name);
-            assert!(soc.loader.rel.ends_with(".bin"), "{}", soc.name);
+            for blob in soc.loader.blobs() {
+                assert_eq!(blob.sha256.len(), 64, "{}", soc.name);
+                assert!(hex::decode(blob.sha256).is_ok(), "{}", soc.name);
+                assert!(blob.rel.ends_with(".bin"), "{}", soc.name);
+            }
         }
     }
 

@@ -53,6 +53,10 @@ pub mod urls {
 
     /// Raw file base of armbian/rkbin ({base}{commit}/{path}), source of the Rockchip Maskrom loaders
     pub const RKBIN_RAW_BASE: &str = "https://raw.githubusercontent.com/armbian/rkbin/";
+
+    /// Raw file base of rockchip-linux/rkbin ({base}{commit}/{path}), Rockchip's own blob releases
+    pub const ROCKCHIP_RKBIN_RAW_BASE: &str =
+        "https://raw.githubusercontent.com/rockchip-linux/rkbin/";
 }
 
 /// Rockchip board flashing over USB (rockusb)
