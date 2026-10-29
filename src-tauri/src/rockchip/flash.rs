@@ -352,7 +352,15 @@ async fn select_storage(device: &mut Device, storage: BoardStorage) -> Result<()
     }
     let current = with_timeout(device.storage()).await?;
     match (current, can_switch) {
-        (Ok(current), _) if current == wanted => Ok(()),
+        (Ok(current), _) if storage.is_reported_as(current) => {
+            if current != wanted {
+                log_info!(
+                    MODULE,
+                    "{storage:?} selected (the loader reports it as {current})"
+                );
+            }
+            Ok(())
+        }
         (Ok(current), _) => Err(format!(
             "{TAG_ROCKUSB_STORAGE_UNAVAILABLE} {storage:?} not available (board is on {current})"
         )),

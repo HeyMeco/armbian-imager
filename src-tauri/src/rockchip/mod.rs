@@ -87,6 +87,14 @@ impl BoardStorage {
             BoardStorage::Ufs => StorageIndex::Ufs,
         }
     }
+
+    /// Whether a storage readback means this storage is selected. Rockchip's rockusb gadget
+    /// (f_rockusb.c) switches SATA and UFS to the same SCSI device and reports it as SATA unless
+    /// built with CONFIG_UFS and a 4 KiB block size, so a UFS board may read back as SATA.
+    pub fn is_reported_as(self, reported: ::rockusb::protocol::StorageIndex) -> bool {
+        use ::rockusb::protocol::StorageIndex;
+        reported == self.index() || (self == BoardStorage::Ufs && reported == StorageIndex::Sata)
+    }
 }
 
 /// A Rockchip device connected over USB in Maskrom or Loader mode
@@ -102,4 +110,25 @@ pub struct RockchipDevice {
     pub maskrom_supported: bool,
     pub bus_id: String,
     pub port_chain: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ::rockusb::protocol::StorageIndex;
+
+    #[test]
+    fn ufs_accepts_the_shared_scsi_readback() {
+        assert!(BoardStorage::Ufs.is_reported_as(StorageIndex::Ufs));
+        assert!(BoardStorage::Ufs.is_reported_as(StorageIndex::Sata));
+        assert!(!BoardStorage::Ufs.is_reported_as(StorageIndex::Emmc));
+    }
+
+    #[test]
+    fn other_storages_need_their_own_index() {
+        assert!(BoardStorage::Emmc.is_reported_as(StorageIndex::Emmc));
+        assert!(!BoardStorage::Emmc.is_reported_as(StorageIndex::Sata));
+        assert!(!BoardStorage::Sd.is_reported_as(StorageIndex::Emmc));
+        assert!(BoardStorage::Spinor.is_reported_as(StorageIndex::MtdBlkSpiNor));
+    }
 }
