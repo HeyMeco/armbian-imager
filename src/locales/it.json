@@ -76,6 +76,8 @@
     "boardLoader": "Avvio del loader della scheda...",
     "boardStorage": {
       "rowLabel": "Memoria della scheda",
+      "auto": "La più grande disponibile",
+      "autoHint": "Scelta quando il loader della scheda è avviato",
       "emmc": "eMMC",
       "sd": "Scheda SD",
       "spinor": "Flash SPI NOR",

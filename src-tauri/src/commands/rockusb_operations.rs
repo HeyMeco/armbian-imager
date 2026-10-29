@@ -8,8 +8,8 @@ use tauri::State;
 
 use crate::autoconfig::{prepare_flash_copy, AutoconfigConfig, PrepError};
 use crate::flash::reject_simulated;
-use crate::rockchip::flash::{rockusb_flash, BoardFlashRequest};
-use crate::rockchip::{self, BoardStorage, RockchipDevice};
+use crate::rockchip::flash::{probe_board_storages, rockusb_flash, BoardFlashRequest};
+use crate::rockchip::{self, RockchipDevice, StorageChoice, StorageInfo};
 use crate::utils::{autoconfig_temp_dir, ensure_regular_nonempty};
 use crate::{log_error, log_info};
 
@@ -21,6 +21,24 @@ pub async fn get_rockusb_devices() -> Result<Vec<RockchipDevice>, String> {
     rockchip::detect::get_rockusb_devices()
 }
 
+/// Storages the board's running loader can reach, with sizes, so the picker can offer the largest;
+/// None while the board is still in the boot ROM (sizes come once the flash has uploaded a loader).
+#[tauri::command]
+pub async fn probe_rockusb_storages(
+    device_path: String,
+) -> Result<Option<Vec<StorageInfo>>, String> {
+    reject_simulated(&device_path)?;
+    probe_board_storages(&device_path).await.map_err(|e| {
+        log_error!(
+            "rockusb_operations",
+            "Storage probe of {:?} failed: {}",
+            device_path,
+            e
+        );
+        e
+    })
+}
+
 /// Flash a decompressed image to the storage of the board at `device_path` (`rockusb://...` from
 /// `get_rockusb_devices`). Pipeline: [profile copy] -> [Maskrom: loader upload, re-enumerate]
 /// -> select storage -> LBA write -> read-back verify -> reset.
@@ -28,7 +46,7 @@ pub async fn get_rockusb_devices() -> Result<Vec<RockchipDevice>, String> {
 pub async fn flash_rockusb_image(
     image_path: String,
     device_path: String,
-    storage: BoardStorage,
+    storage: StorageChoice,
     verify: bool,
     board_soc: Option<String>,
     autoconfig: Option<AutoconfigConfig>,

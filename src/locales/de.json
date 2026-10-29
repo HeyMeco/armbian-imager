@@ -76,6 +76,8 @@
     "boardLoader": "Loader des Boards wird gestartet...",
     "boardStorage": {
       "rowLabel": "Speicher des Boards",
+      "auto": "Größter verfügbarer",
+      "autoHint": "Wird gewählt, sobald der Loader des Boards läuft",
       "emmc": "eMMC",
       "sd": "SD-Karte",
       "spinor": "SPI-NOR-Flash",

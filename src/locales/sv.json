@@ -76,6 +76,8 @@
     "boardLoader": "Startar kortets laddare...",
     "boardStorage": {
       "rowLabel": "Kortets lagring",
+      "auto": "Största tillgängliga",
+      "autoHint": "Väljs när kortets laddare körs",
       "emmc": "eMMC",
       "sd": "SD-kort",
       "spinor": "SPI NOR-flash",

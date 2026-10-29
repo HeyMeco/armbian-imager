@@ -76,6 +76,8 @@
     "boardLoader": "Uruchamianie loadera płytki...",
     "boardStorage": {
       "rowLabel": "Pamięć płytki",
+      "auto": "Największa dostępna",
+      "autoHint": "Wybierana po uruchomieniu loadera płytki",
       "emmc": "eMMC",
       "sd": "Karta SD",
       "spinor": "Pamięć SPI NOR",

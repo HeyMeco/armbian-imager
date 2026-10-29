@@ -55,7 +55,7 @@ function AppContent() {
   const [selectedDevice, setSelectedDevice] = useState<BlockDevice | null>(null);
   // Block images go to a disk/card or, for Rockchip boards, straight to the board over USB.
   const [flashTarget, setFlashTarget] = useState<FlashTarget>(FLASH_TARGET.DISK);
-  const [boardStorage, setBoardStorage] = useState<BoardStorage>(BOARD_STORAGE.EMMC);
+  const [boardStorage, setBoardStorage] = useState<BoardStorage>(BOARD_STORAGE.AUTO);
   const flashMethod = selectedImage ? resolveFlashMethod(selectedImage, flashTarget) : undefined;
   // Opt-in autoconfig profile id picked at flash time; null means unchanged behaviour.
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
@@ -459,7 +459,7 @@ function AppContent() {
       setSelectedImage(null);
       // A new image starts on the disk flow; the board choice belongs to the image it was made for.
       setFlashTarget(FLASH_TARGET.DISK);
-      setBoardStorage(BOARD_STORAGE.EMMC);
+      setBoardStorage(BOARD_STORAGE.AUTO);
     }
     if (stepIndex <= 3) {
       setSelectedDevice(null);

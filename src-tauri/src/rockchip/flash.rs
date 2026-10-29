@@ -19,12 +19,13 @@ use rockusb::protocol::{ResetOpcode, SECTOR_SIZE};
 
 use super::socs::{self, RockchipSoc};
 use super::{
-    detect, loader, BoardStorage, RockchipMode, STAGE_COMPLETE, STAGE_CONNECTING, STAGE_LOADER,
-    STAGE_RECONNECTING, STAGE_RESETTING, STAGE_STORAGE, STAGE_VERIFYING, STAGE_WRITING,
-    TAG_ROCKUSB_CONNECTION_FAILED, TAG_ROCKUSB_DISCONNECTED, TAG_ROCKUSB_DRIVER_MISSING,
-    TAG_ROCKUSB_ERROR, TAG_ROCKUSB_LOADER_FAILED, TAG_ROCKUSB_NO_LOADER_MODE,
-    TAG_ROCKUSB_PERMISSION_DENIED, TAG_ROCKUSB_SOC_MISMATCH, TAG_ROCKUSB_STORAGE_UNAVAILABLE,
-    TAG_ROCKUSB_TIMEOUT, TAG_ROCKUSB_UNSUPPORTED_SOC,
+    detect, largest_storage, loader, BoardStorage, RockchipMode, StorageChoice, StorageInfo,
+    STAGE_COMPLETE, STAGE_CONNECTING, STAGE_LOADER, STAGE_RECONNECTING, STAGE_RESETTING,
+    STAGE_STORAGE, STAGE_VERIFYING, STAGE_WRITING, TAG_ROCKUSB_CONNECTION_FAILED,
+    TAG_ROCKUSB_DISCONNECTED, TAG_ROCKUSB_DRIVER_MISSING, TAG_ROCKUSB_ERROR,
+    TAG_ROCKUSB_LOADER_FAILED, TAG_ROCKUSB_NO_LOADER_MODE, TAG_ROCKUSB_PERMISSION_DENIED,
+    TAG_ROCKUSB_SOC_MISMATCH, TAG_ROCKUSB_STORAGE_UNAVAILABLE, TAG_ROCKUSB_TIMEOUT,
+    TAG_ROCKUSB_UNSUPPORTED_SOC,
 };
 use crate::config::rockusb as cfg;
 use crate::flash::verify::{
@@ -41,7 +42,7 @@ const MODULE: &str = "rockchip::flash";
 pub struct BoardFlashRequest<'a> {
     pub image_path: &'a Path,
     pub device_path: &'a str,
-    pub storage: BoardStorage,
+    pub storage: StorageChoice,
     pub verify: bool,
     /// API `soc` of the image's board, when known; a board with another SoC is refused
     pub board_soc: Option<&'a str>,
@@ -53,6 +54,7 @@ pub async fn rockusb_flash(
     state: Arc<FlashState>,
 ) -> Result<(), String> {
     let image_family = req.board_soc.and_then(socs::find_by_board_soc);
+    let _usb = usb_session().await;
 
     state.board.is_active.store(true, Ordering::SeqCst);
     set_stage(&state, STAGE_CONNECTING);
@@ -114,7 +116,20 @@ pub async fn rockusb_flash(
 
     state.ensure_not_cancelled()?;
     set_stage(&state, STAGE_STORAGE);
-    select_storage(&mut device, req.storage).await?;
+    let storage = match req.storage.fixed() {
+        Some(storage) => storage,
+        None => {
+            let found = probe_storages(&mut device).await?;
+            let largest = largest_storage(&found).ok_or_else(|| {
+                format!(
+                    "{TAG_ROCKUSB_STORAGE_UNAVAILABLE} the loader found no storage on the board"
+                )
+            })?;
+            log_info!(MODULE, "Largest storage: {:?} out of {:?}", largest, found);
+            largest
+        }
+    };
+    select_storage(&mut device, storage).await?;
 
     let flash_info = with_timeout(device.flash_info())
         .await?
@@ -123,7 +138,7 @@ pub async fn rockusb_flash(
     log_info!(
         MODULE,
         "{:?} selected: {} sectors ({} bytes)",
-        req.storage,
+        storage,
         flash_info.sectors(),
         capacity
     );
@@ -334,17 +349,75 @@ async fn wait_for_loader(path: &str, state: &FlashState) -> Result<DeviceInfo, S
     }
 }
 
+// One USB conversation with a board at a time: a storage probe never interleaves with a flash.
+static USB_SESSION: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+async fn usb_session() -> tokio::sync::MutexGuard<'static, ()> {
+    USB_SESSION.lock().await
+}
+
+/// Storages a board's running loader can reach, with sizes; None while the board is in the boot ROM.
+pub async fn probe_board_storages(path: &str) -> Result<Option<Vec<StorageInfo>>, String> {
+    let _usb = usb_session().await;
+    let (info, found) = detect::resolve(path)?;
+    if found.mode != RockchipMode::Loader && !answers_rockusb(&info).await {
+        return Ok(None);
+    }
+    let mut device = open_with_retry(&info).await?;
+    let found = probe_storages(&mut device).await?;
+    log_info!(MODULE, "Storages on {:?}: {:?}", path, found);
+    Ok(Some(found))
+}
+
+/// Switch to each storage in turn and keep the ones that read back with a size. A loader that can't
+/// switch only reports where it sits (eMMC when it can't even say that).
+async fn probe_storages(device: &mut Device) -> Result<Vec<StorageInfo>, String> {
+    let can_switch = loader_can_switch(device).await?;
+    let mut found = Vec::new();
+    for storage in BoardStorage::ALL {
+        if can_switch {
+            match with_timeout(device.switch_storage(storage.index())).await? {
+                Err(e) if is_disconnect(&e) => return Err(usb_err("switch storage", e)),
+                // A storage the board lacks may fail here or only on the readback below.
+                _ => {}
+            }
+        }
+        let selected = match with_timeout(device.storage()).await? {
+            Ok(current) => storage.is_reported_as(current),
+            Err(e) if is_disconnect(&e) => return Err(usb_err("read the selected storage", e)),
+            Err(_) => !can_switch && storage == BoardStorage::Emmc,
+        };
+        if !selected {
+            continue;
+        }
+        match with_timeout(device.flash_info()).await? {
+            Ok(flash) if flash.size() > 0 => found.push(StorageInfo {
+                storage,
+                size: flash.size(),
+            }),
+            Ok(_) => {}
+            Err(e) if is_disconnect(&e) => return Err(usb_err("read the storage size", e)),
+            Err(e) => log_warn!(MODULE, "No size for {:?}: {}", storage, e),
+        }
+    }
+    Ok(found)
+}
+
+async fn loader_can_switch(device: &mut Device) -> Result<bool, String> {
+    match with_timeout(device.capability()).await? {
+        Ok(cap) => Ok(cap.switch_storage()),
+        Err(e) if is_disconnect(&e) => Err(usb_err("read the loader capabilities", e)),
+        Err(e) => {
+            log_warn!(MODULE, "Capability query failed: {}", e);
+            Ok(false)
+        }
+    }
+}
+
 /// Switch to `storage` and read it back: the loader reports no error for storage the board lacks.
 async fn select_storage(device: &mut Device, storage: BoardStorage) -> Result<(), String> {
     let wanted = storage.index();
-    let can_switch = match with_timeout(device.capability()).await? {
-        Ok(cap) => cap.switch_storage(),
-        Err(e) if is_disconnect(&e) => return Err(usb_err("read the loader capabilities", e)),
-        Err(e) => {
-            log_warn!(MODULE, "Capability query failed: {}", e);
-            false
-        }
-    };
+    let can_switch = loader_can_switch(device).await?;
     if can_switch {
         with_timeout(device.switch_storage(wanted))
             .await?

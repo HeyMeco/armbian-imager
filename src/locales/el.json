@@ -76,6 +76,8 @@
     "boardLoader": "Εκκίνηση του loader της πλακέτας...",
     "boardStorage": {
       "rowLabel": "Αποθήκευση πλακέτας",
+      "auto": "Μεγαλύτερη διαθέσιμη",
+      "autoHint": "Επιλέγεται μόλις ξεκινήσει ο loader της πλακέτας",
       "emmc": "eMMC",
       "sd": "Κάρτα SD",
       "spinor": "Μνήμη SPI NOR",

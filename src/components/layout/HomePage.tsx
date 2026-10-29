@@ -234,7 +234,7 @@ export function HomePage({
   onClearDevice,
   flashTarget = FLASH_TARGET.DISK,
   onFlashTargetChange,
-  boardStorage = BOARD_STORAGE.EMMC,
+  boardStorage = BOARD_STORAGE.AUTO,
   onBoardStorageChange,
   onOpenUpdate,
   isOnline = true,

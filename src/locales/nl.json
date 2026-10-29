@@ -76,6 +76,8 @@
     "boardLoader": "Loader van het board starten...",
     "boardStorage": {
       "rowLabel": "Opslag van het board",
+      "auto": "Grootste beschikbare",
+      "autoHint": "Gekozen zodra de loader van het board draait",
       "emmc": "eMMC",
       "sd": "SD-kaart",
       "spinor": "SPI NOR-flash",

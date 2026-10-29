@@ -190,6 +190,7 @@ fn main() {
             commands::qdl_operations::flash_qdl_ufs_image,
             commands::rockusb_operations::get_rockusb_devices,
             commands::rockusb_operations::flash_rockusb_image,
+            commands::rockusb_operations::probe_rockusb_storages,
             commands::custom_image::select_custom_image,
             commands::custom_image::check_needs_decompression,
             commands::custom_image::decompress_custom_image,

@@ -76,6 +76,8 @@
     "boardLoader": "Kartın yükleyicisi başlatılıyor...",
     "boardStorage": {
       "rowLabel": "Kart depolaması",
+      "auto": "Mevcut en büyük",
+      "autoHint": "Kartın yükleyicisi çalışınca seçilir",
       "emmc": "eMMC",
       "sd": "SD kart",
       "spinor": "SPI NOR flash",

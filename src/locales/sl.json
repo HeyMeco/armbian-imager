@@ -76,6 +76,8 @@
     "boardLoader": "Zaganjanje nalagalnika plošče...",
     "boardStorage": {
       "rowLabel": "Pomnilnik plošče",
+      "auto": "Največji razpoložljivi",
+      "autoHint": "Izbran, ko se zažene nalagalnik plošče",
       "emmc": "eMMC",
       "sd": "Kartica SD",
       "spinor": "Pomnilnik SPI NOR",

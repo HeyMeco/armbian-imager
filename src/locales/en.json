@@ -76,6 +76,8 @@
     "boardLoader": "Starting the board's loader...",
     "boardStorage": {
       "rowLabel": "Board storage",
+      "auto": "Largest available",
+      "autoHint": "Picked once the board's loader is running",
       "emmc": "eMMC",
       "sd": "SD card",
       "spinor": "SPI NOR flash",

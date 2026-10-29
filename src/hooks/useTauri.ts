@@ -3,7 +3,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { qdlToBlockDevice, rockusbToBlockDevice, isDeviceConnected } from '../utils/deviceUtils';
-import type { BoardInfo, ImageInfo, BlockDevice, DownloadProgress, FlashProgress, CustomImageInfo, CustomImageClassification, ArmbianReleaseInfo, CachedImageInfo, CacheBreakdown, QdlDevice, RockchipDevice, BoardStorage, TargetBus, VendorInfo, AutoconfigConfig, DevScenario, DevScenariosStatus, DevTestImage, SshKeyLookup, SshKeySource } from '../types';
+import type { BoardInfo, ImageInfo, BlockDevice, DownloadProgress, FlashProgress, CustomImageInfo, CustomImageClassification, ArmbianReleaseInfo, CachedImageInfo, CacheBreakdown, QdlDevice, RockchipDevice, BoardStorage, BoardStorageInfo, TargetBus, VendorInfo, AutoconfigConfig, DevScenario, DevScenariosStatus, DevTestImage, SshKeyLookup, SshKeySource } from '../types';
 
 export async function getBoards(): Promise<BoardInfo[]> {
   return invoke('get_boards');
@@ -293,6 +293,11 @@ export async function flashQdlUfsImage(
 /** Detect Rockchip boards connected via USB in Maskrom or Loader mode */
 export async function getRockusbDevices(): Promise<RockchipDevice[]> {
   return invoke('get_rockusb_devices');
+}
+
+/** Storages the board's running loader reaches, with sizes; null while the board is still in the boot ROM */
+export async function probeRockusbStorages(devicePath: string): Promise<BoardStorageInfo[] | null> {
+  return invoke('probe_rockusb_storages', { devicePath });
 }
 
 /** Flash a decompressed image to `storage` on the Rockchip board at `devicePath` (RockchipDevice.path);

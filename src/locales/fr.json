@@ -76,6 +76,8 @@
     "boardLoader": "Démarrage du loader de la carte...",
     "boardStorage": {
       "rowLabel": "Stockage de la carte",
+      "auto": "Le plus grand disponible",
+      "autoHint": "Choisi dès que le loader de la carte tourne",
       "emmc": "eMMC",
       "sd": "Carte SD",
       "spinor": "Flash SPI NOR",

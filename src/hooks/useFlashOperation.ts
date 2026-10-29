@@ -114,7 +114,7 @@ export function useFlashOperation({
   boardSlug,
   autoconfig,
   flashTarget = FLASH_TARGET.DISK,
-  boardStorage = BOARD_STORAGE.EMMC,
+  boardStorage = BOARD_STORAGE.AUTO,
   onBack,
 }: UseFlashOperationProps): UseFlashOperationReturn {
   const { t } = useTranslation();

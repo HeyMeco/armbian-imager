@@ -76,6 +76,8 @@
     "boardLoader": "Iniciando el loader de la placa...",
     "boardStorage": {
       "rowLabel": "Almacenamiento de la placa",
+      "auto": "El más grande disponible",
+      "autoHint": "Se elige cuando el loader de la placa esté en marcha",
       "emmc": "eMMC",
       "sd": "Tarjeta SD",
       "spinor": "Flash SPI NOR",

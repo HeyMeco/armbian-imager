@@ -77,6 +77,14 @@ pub enum BoardStorage {
 }
 
 impl BoardStorage {
+    /// Every storage the flash can target, in the order a probe tries them.
+    pub const ALL: [BoardStorage; 4] = [
+        BoardStorage::Emmc,
+        BoardStorage::Sd,
+        BoardStorage::Spinor,
+        BoardStorage::Ufs,
+    ];
+
     /// Index for `switch_storage`; eMMC, SD and SPI NOR are the three rkdeveloptool's `cs` offers.
     pub fn index(self) -> ::rockusb::protocol::StorageIndex {
         use ::rockusb::protocol::StorageIndex;
@@ -95,6 +103,48 @@ impl BoardStorage {
         use ::rockusb::protocol::StorageIndex;
         reported == self.index() || (self == BoardStorage::Ufs && reported == StorageIndex::Sata)
     }
+}
+
+/// The storage the user asked for: one in particular, or the largest the board's loader finds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum StorageChoice {
+    Auto,
+    Emmc,
+    Sd,
+    Spinor,
+    Ufs,
+}
+
+impl StorageChoice {
+    /// The storage named outright; None for `Auto`, resolved once the loader runs.
+    pub fn fixed(self) -> Option<BoardStorage> {
+        match self {
+            StorageChoice::Auto => None,
+            StorageChoice::Emmc => Some(BoardStorage::Emmc),
+            StorageChoice::Sd => Some(BoardStorage::Sd),
+            StorageChoice::Spinor => Some(BoardStorage::Spinor),
+            StorageChoice::Ufs => Some(BoardStorage::Ufs),
+        }
+    }
+}
+
+/// One storage a running loader can reach, with its size
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StorageInfo {
+    pub storage: BoardStorage,
+    pub size: u64,
+}
+
+/// The biggest storage found; on a tie the earlier one in `BoardStorage::ALL` order.
+pub fn largest_storage(found: &[StorageInfo]) -> Option<BoardStorage> {
+    found
+        .iter()
+        .fold(None::<&StorageInfo>, |best, s| match best {
+            Some(b) if b.size >= s.size => Some(b),
+            _ => Some(s),
+        })
+        .map(|s| s.storage)
 }
 
 /// A Rockchip device connected over USB in Maskrom or Loader mode
@@ -122,6 +172,34 @@ mod tests {
         assert!(BoardStorage::Ufs.is_reported_as(StorageIndex::Ufs));
         assert!(BoardStorage::Ufs.is_reported_as(StorageIndex::Sata));
         assert!(!BoardStorage::Ufs.is_reported_as(StorageIndex::Emmc));
+    }
+
+    #[test]
+    fn the_largest_storage_wins_and_ties_keep_probe_order() {
+        let found = |v: &[(BoardStorage, u64)]| -> Vec<StorageInfo> {
+            v.iter()
+                .map(|&(storage, size)| StorageInfo { storage, size })
+                .collect()
+        };
+        assert_eq!(largest_storage(&[]), None);
+        assert_eq!(
+            largest_storage(&found(&[
+                (BoardStorage::Emmc, 32 << 30),
+                (BoardStorage::Spinor, 16 << 20),
+                (BoardStorage::Ufs, 128 << 30),
+            ])),
+            Some(BoardStorage::Ufs)
+        );
+        assert_eq!(
+            largest_storage(&found(&[(BoardStorage::Emmc, 1), (BoardStorage::Ufs, 1)])),
+            Some(BoardStorage::Emmc)
+        );
+    }
+
+    #[test]
+    fn auto_has_no_fixed_storage() {
+        assert_eq!(StorageChoice::Auto.fixed(), None);
+        assert_eq!(StorageChoice::Ufs.fixed(), Some(BoardStorage::Ufs));
     }
 
     #[test]

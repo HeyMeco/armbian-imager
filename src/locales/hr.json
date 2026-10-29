@@ -76,6 +76,8 @@
     "boardLoader": "Pokretanje loadera ploče...",
     "boardStorage": {
       "rowLabel": "Pohrana ploče",
+      "auto": "Najveća dostupna",
+      "autoHint": "Odabire se kad se pokrene loader ploče",
       "emmc": "eMMC",
       "sd": "SD kartica",
       "spinor": "SPI NOR flash",

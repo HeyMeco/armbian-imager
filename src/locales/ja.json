@@ -76,6 +76,8 @@
     "boardLoader": "ボードのローダーを起動しています...",
     "boardStorage": {
       "rowLabel": "ボードのストレージ",
+      "auto": "最大のストレージ",
+      "autoHint": "ボードのローダー起動後に選択されます",
       "emmc": "eMMC",
       "sd": "SD カード",
       "spinor": "SPI NOR フラッシュ",

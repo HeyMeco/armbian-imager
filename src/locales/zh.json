@@ -76,6 +76,8 @@
     "boardLoader": "正在启动开发板的引导程序...",
     "boardStorage": {
       "rowLabel": "开发板存储",
+      "auto": "最大可用存储",
+      "autoHint": "开发板引导程序运行后自动选择",
       "emmc": "eMMC",
       "sd": "SD 卡",
       "spinor": "SPI NOR 闪存",

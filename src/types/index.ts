@@ -127,8 +127,10 @@ export const FLASH_TARGET = {
 
 export type FlashTarget = (typeof FLASH_TARGET)[keyof typeof FLASH_TARGET];
 
-/** Storage on a Rockchip board a rockusb flash writes to; twin of rockchip::BoardStorage in Rust. */
+/** Storage on a Rockchip board a rockusb flash writes to; twin of rockchip::StorageChoice in Rust.
+ *  AUTO lets the board's loader pick the largest storage it finds. */
 export const BOARD_STORAGE = {
+  AUTO: 'auto',
   EMMC: 'emmc',
   SD: 'sd',
   SPINOR: 'spinor',
@@ -136,6 +138,17 @@ export const BOARD_STORAGE = {
 } as const;
 
 export type BoardStorage = (typeof BOARD_STORAGE)[keyof typeof BOARD_STORAGE];
+
+/** One storage a board's running loader can reach; mirrors rockchip::StorageInfo in Rust */
+export interface BoardStorageInfo {
+  storage: Exclude<BoardStorage, typeof BOARD_STORAGE.AUTO>;
+  size: number;
+}
+
+/** The biggest probed storage; on a tie the one the probe found first (the backend's order). */
+export function largestBoardStorage(found: readonly BoardStorageInfo[]): BoardStorageInfo['storage'] | null {
+  return found.reduce<BoardStorageInfo | null>((best, s) => (best && best.size >= s.size ? best : s), null)?.storage ?? null;
+}
 
 /** The write path once the target is chosen: the image decides EDL, the user's target decides disk vs board. */
 export function resolveFlashMethod(

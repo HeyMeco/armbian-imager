@@ -9,10 +9,12 @@ import { useTranslation } from 'react-i18next';
 import { PanelError, DeviceIcon, getDeviceBadge, BoardImage, MarqueeText, EmptyState } from '../shared';
 import type {
   BlockDevice, AutoconfigProfile, AutoconfigProfilesChangedDetail, FlashMethod, FlashTarget, BoardStorage,
+  BoardStorageInfo,
 } from '../../types';
-import { BOARD_STORAGE, FLASH_TARGET, isBoardMethod, isEdlMethod, targetBus } from '../../types';
+import { BOARD_STORAGE, FLASH_TARGET, isBoardMethod, isEdlMethod, largestBoardStorage, targetBus } from '../../types';
+import { formatBytes } from '../../utils';
 import { SegmentedControl, SelectMenu } from '../settings/controls';
-import { getTargetDevices } from '../../hooks/useTauri';
+import { getTargetDevices, probeRockusbStorages } from '../../hooks/useTauri';
 import { getAutoconfigProfiles, getAllowSystemDevices } from '../../hooks/useSettings';
 import { useAsyncData } from '../../hooks/useAsyncData';
 import { useErrorRetry } from '../../hooks/useErrorRetry';
@@ -64,7 +66,7 @@ export function DevicePanel({
   boardFlashAvailable = false,
   flashTarget = FLASH_TARGET.DISK,
   onFlashTargetChange,
-  boardStorage = BOARD_STORAGE.EMMC,
+  boardStorage = BOARD_STORAGE.AUTO,
   onBoardStorageChange,
   edlEntry,
   summary = [],
@@ -105,10 +107,47 @@ export function DevicePanel({
     ],
     [t]
   );
+  // Storages the board's running loader reported, with sizes; null until then (or while in the boot ROM).
+  const [probedStorages, setProbedStorages] = useState<BoardStorageInfo[] | null>(null);
   const storageOptions = useMemo(
-    () => Object.values(BOARD_STORAGE).map((value) => ({ value, label: t(`flash.boardStorage.${value}`) })),
-    [t]
+    () =>
+      probedStorages && probedStorages.length > 0
+        ? probedStorages.map(({ storage, size }) => ({
+            value: storage as BoardStorage,
+            label: `${t(`flash.boardStorage.${storage}`)} · ${formatBytes(size)}`,
+          }))
+        : Object.values(BOARD_STORAGE).map((value) => ({
+            value,
+            label: t(`flash.boardStorage.${value}`),
+            hint: value === BOARD_STORAGE.AUTO ? t('flash.boardStorage.autoHint') : undefined,
+          })),
+    [probedStorages, t]
   );
+
+  // Ask a board that already runs a loader what it has; a boot ROM board keeps "Largest available".
+  const probePath = isRockusb ? selectedDevice?.path ?? null : null;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sizes belong to the board being confirmed
+    setProbedStorages(null);
+    if (!probePath) return;
+    let alive = true;
+    probeRockusbStorages(probePath)
+      .then((found) => alive && setProbedStorages(found))
+      .catch(() => {
+        // The flash resolves "Largest available" itself; the probe only adds sizes.
+      });
+    return () => {
+      alive = false;
+    };
+  }, [probePath]);
+
+  // Preselect the largest storage, unless the user already picked one the board has.
+  useEffect(() => {
+    if (!probedStorages?.length || !onBoardStorageChange) return;
+    if (probedStorages.some((s) => s.storage === boardStorage)) return;
+    const largest = largestBoardStorage(probedStorages);
+    if (largest) onBoardStorageChange(largest);
+  }, [probedStorages, boardStorage, onBoardStorageChange]);
 
   // Autoconfig profiles apply to Armbian images (both sd/.img.xz and QDL); hidden for generic custom images.
   const showAutoconfig = supportsAutoconfig;
