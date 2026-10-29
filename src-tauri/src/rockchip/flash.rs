@@ -369,38 +369,91 @@ pub async fn probe_board_storages(path: &str) -> Result<Option<Vec<StorageInfo>>
     Ok(Some(found))
 }
 
-/// Switch to each storage in turn and keep the ones that read back with a size. A loader that can't
-/// switch only reports where it sits (eMMC when it can't even say that).
+/// The storages a running loader reaches, with sizes. The one it already sits on is read first,
+/// with no switch, so it is listed even when the loader can't switch back to it (RK3576 usbplug
+/// rescans SCSI on every switch to UFS). The others are tried in turn, then the board is put back.
 async fn probe_storages(device: &mut Device) -> Result<Vec<StorageInfo>, String> {
     let can_switch = loader_can_switch(device).await?;
+    let original = match with_timeout(device.storage()).await? {
+        Ok(current) => Some(current),
+        Err(e) if is_disconnect(&e) => return Err(usb_err("read the selected storage", e)),
+        Err(e) => {
+            log_warn!(MODULE, "Storage query failed: {}", e);
+            None
+        }
+    };
+    // A loader that can't say where it sits is an old one on eMMC.
+    let start = match original {
+        Some(current) => BoardStorage::ALL
+            .into_iter()
+            .find(|s| s.is_reported_as(current)),
+        None => Some(BoardStorage::Emmc),
+    };
+
     let mut found = Vec::new();
-    for storage in BoardStorage::ALL {
-        if can_switch {
-            match with_timeout(device.switch_storage(storage.index())).await? {
-                Err(e) if is_disconnect(&e) => return Err(usb_err("switch storage", e)),
-                // A storage the board lacks may fail here or only on the readback below.
-                _ => {}
+    if let Some(storage) = start {
+        push_size(device, storage, &mut found).await?;
+    }
+    if !can_switch {
+        return Ok(found);
+    }
+
+    for storage in BoardStorage::ALL.into_iter().filter(|s| Some(*s) != start) {
+        match with_timeout(device.switch_storage(storage.index())).await? {
+            Err(e) if is_disconnect(&e) => return Err(usb_err("switch storage", e)),
+            // A storage the board lacks may fail here or only on the readback below.
+            _ => {}
+        }
+        match with_timeout(device.storage()).await? {
+            Ok(current) if storage.is_reported_as(current) => {
+                push_size(device, storage, &mut found).await?
             }
-        }
-        let selected = match with_timeout(device.storage()).await? {
-            Ok(current) => storage.is_reported_as(current),
-            Err(e) if is_disconnect(&e) => return Err(usb_err("read the selected storage", e)),
-            Err(_) => !can_switch && storage == BoardStorage::Emmc,
-        };
-        if !selected {
-            continue;
-        }
-        match with_timeout(device.flash_info()).await? {
-            Ok(flash) if flash.size() > 0 => found.push(StorageInfo {
-                storage,
-                size: flash.size(),
-            }),
             Ok(_) => {}
-            Err(e) if is_disconnect(&e) => return Err(usb_err("read the storage size", e)),
-            Err(e) => log_warn!(MODULE, "No size for {:?}: {}", storage, e),
+            Err(e) if is_disconnect(&e) => return Err(usb_err("read the selected storage", e)),
+            Err(_) => {}
         }
     }
+
+    // Leave the board where it was, so flashing that storage needs no switch.
+    if let Some(original) = original {
+        if matches!(with_timeout(device.storage()).await?, Ok(current) if current == original) {
+            found.sort_by_key(|f| BoardStorage::ALL.iter().position(|s| *s == f.storage));
+            return Ok(found);
+        }
+        let _ = with_timeout(device.switch_storage(original)).await?;
+        match with_timeout(device.storage()).await? {
+            Ok(current) if current == original => {}
+            Ok(current) => log_warn!(
+                MODULE,
+                "Couldn't switch back to {original} after probing; the loader is on {current}"
+            ),
+            Err(e) => log_warn!(
+                MODULE,
+                "Couldn't confirm the switch back to {original}: {e}"
+            ),
+        }
+    }
+
+    found.sort_by_key(|f| BoardStorage::ALL.iter().position(|s| *s == f.storage));
     Ok(found)
+}
+
+/// Record the size of the storage the loader has selected, if it reports one.
+async fn push_size(
+    device: &mut Device,
+    storage: BoardStorage,
+    found: &mut Vec<StorageInfo>,
+) -> Result<(), String> {
+    match with_timeout(device.flash_info()).await? {
+        Ok(flash) if flash.size() > 0 => found.push(StorageInfo {
+            storage,
+            size: flash.size(),
+        }),
+        Ok(_) => log_warn!(MODULE, "{:?} reports no size", storage),
+        Err(e) if is_disconnect(&e) => return Err(usb_err("read the storage size", e)),
+        Err(e) => log_warn!(MODULE, "No size for {:?}: {}", storage, e),
+    }
+    Ok(())
 }
 
 async fn loader_can_switch(device: &mut Device) -> Result<bool, String> {
@@ -417,6 +470,16 @@ async fn loader_can_switch(device: &mut Device) -> Result<bool, String> {
 /// Switch to `storage` and read it back: the loader reports no error for storage the board lacks.
 async fn select_storage(device: &mut Device, storage: BoardStorage) -> Result<(), String> {
     let wanted = storage.index();
+    // Already there: no switch, since a switch to SATA/UFS rescans SCSI even when it is current.
+    if let Ok(Ok(current)) = with_timeout(device.storage()).await {
+        if storage.is_reported_as(current) {
+            log_info!(
+                MODULE,
+                "{storage:?} already selected (the loader reports {current})"
+            );
+            return Ok(());
+        }
+    }
     let can_switch = loader_can_switch(device).await?;
     if can_switch {
         with_timeout(device.switch_storage(wanted))

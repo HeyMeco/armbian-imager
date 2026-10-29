@@ -109,20 +109,21 @@ export function DevicePanel({
   );
   // Storages the board's running loader reported, with sizes; null until then (or while in the boot ROM).
   const [probedStorages, setProbedStorages] = useState<BoardStorageInfo[] | null>(null);
-  const storageOptions = useMemo(
-    () =>
-      probedStorages && probedStorages.length > 0
-        ? probedStorages.map(({ storage, size }) => ({
-            value: storage as BoardStorage,
-            label: `${t(`flash.boardStorage.${storage}`)} · ${formatBytes(size)}`,
-          }))
-        : Object.values(BOARD_STORAGE).map((value) => ({
-            value,
-            label: t(`flash.boardStorage.${value}`),
-            hint: value === BOARD_STORAGE.AUTO ? t('flash.boardStorage.autoHint') : undefined,
-          })),
-    [probedStorages, t]
-  );
+  // Every storage stays pickable: the probe only adds sizes, since a loader may fail to switch to
+  // one the board has. "Largest available" is offered until a probe has found something.
+  const storageOptions = useMemo(() => {
+    const probed = probedStorages?.length ? probedStorages : null;
+    return Object.values(BOARD_STORAGE)
+      .filter((value) => !(probed && value === BOARD_STORAGE.AUTO))
+      .map((value) => {
+        const size = probed?.find((s) => s.storage === value)?.size;
+        return {
+          value,
+          label: size ? `${t(`flash.boardStorage.${value}`)} · ${formatBytes(size)}` : t(`flash.boardStorage.${value}`),
+          hint: value === BOARD_STORAGE.AUTO ? t('flash.boardStorage.autoHint') : undefined,
+        };
+      });
+  }, [probedStorages, t]);
 
   // Ask a board that already runs a loader what it has; a boot ROM board keeps "Largest available".
   const probePath = isRockusb ? selectedDevice?.path ?? null : null;
@@ -141,10 +142,10 @@ export function DevicePanel({
     };
   }, [probePath]);
 
-  // Preselect the largest storage, unless the user already picked one the board has.
+  // Once sizes are known, "Largest available" becomes the largest one found; a manual pick stays.
   useEffect(() => {
     if (!probedStorages?.length || !onBoardStorageChange) return;
-    if (probedStorages.some((s) => s.storage === boardStorage)) return;
+    if (boardStorage !== BOARD_STORAGE.AUTO) return;
     const largest = largestBoardStorage(probedStorages);
     if (largest) onBoardStorageChange(largest);
   }, [probedStorages, boardStorage, onBoardStorageChange]);

@@ -52,7 +52,7 @@ Prebuilt binaries are available for every supported platform.
 
 ### Flashing a Rockchip board over USB
 
-For disk images (unless the board is known to use a non-Rockchip SoC), the last step lets you write to a Rockchip board itself instead of a disk or card. Pick **Rockchip board**, connect the board's USB OTG port in Maskrom mode (hold the Maskrom or Recovery button while plugging it in) or Loader mode, and choose which storage on the board gets the image: eMMC, SD card, SPI NOR flash or UFS. By default the largest storage the board has is picked; a board already running its loader shows each storage with its size.
+For disk images (unless the board is known to use a non-Rockchip SoC), the last step lets you write to a Rockchip board itself instead of a disk or card. Pick **Rockchip board**, connect the board's USB OTG port in Maskrom mode (hold the Maskrom or Recovery button while plugging it in) or Loader mode, and choose which storage on the board gets the image: eMMC, SD card, SPI NOR flash or UFS. By default the largest storage the board has is picked; when the board already runs its loader, the sizes it reports are shown next to each storage.
 
 A board in Maskrom first needs a small DRAM loader. The app downloads it from [armbian/rkbin](https://github.com/armbian/rkbin) on first use, checks it against a SHA-256 pinned in the app, and caches it. Maskrom is supported on RK3588, RK3566/RK3568, RK3576, RK3528, RK3399 and RK3328; a board already in Loader mode works with any Rockchip SoC.
 
