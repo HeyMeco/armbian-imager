@@ -51,8 +51,42 @@ fn cache_path(soc: &RockchipSoc) -> PathBuf {
     loaders_dir().join(CACHE_SUBDIR).join(file)
 }
 
+/// Debug builds only: load this boot file instead of the pinned one, to try a newer loader on hardware.
+#[cfg(debug_assertions)]
+const LOADER_OVERRIDE_ENV: &str = "ARMBIAN_ROCKUSB_LOADER";
+
+/// A local loader named by `ARMBIAN_ROCKUSB_LOADER`; no pinned digest, but it must parse and name this SoC.
+#[cfg(debug_assertions)]
+fn override_loader(soc: &RockchipSoc) -> Option<Result<Vec<LoaderEntry>, String>> {
+    let path = std::env::var_os(LOADER_OVERRIDE_ENV)?;
+    log_warn!(
+        "rockchip::loader",
+        "{LOADER_OVERRIDE_ENV} set: using {} instead of the pinned loader",
+        std::path::Path::new(&path).display()
+    );
+    Some(
+        std::fs::read(&path)
+            .map_err(|e| {
+                format!("{TAG_ROCKUSB_LOADER_UNAVAILABLE} can't read {LOADER_OVERRIDE_ENV}: {e}")
+            })
+            .and_then(|bytes| {
+                let (header, entries) = parse_loader(&bytes).map_err(|e| {
+                    format!("{TAG_ROCKUSB_LOADER_UNAVAILABLE} {LOADER_OVERRIDE_ENV}: {e}")
+                })?;
+                check_chip(&header, soc).map_err(|e| {
+                    format!("{TAG_ROCKUSB_LOADER_UNAVAILABLE} {LOADER_OVERRIDE_ENV}: {e}")
+                })?;
+                Ok(entries)
+            }),
+    )
+}
+
 /// The SoC's loader entries, from the cache or a fresh pinned download.
 pub async fn ensure_loader(soc: &'static RockchipSoc) -> Result<Vec<LoaderEntry>, String> {
+    #[cfg(debug_assertions)]
+    if let Some(entries) = override_loader(soc) {
+        return entries;
+    }
     let path = cache_path(soc);
     if let Ok(bytes) = std::fs::read(&path) {
         match validate(&bytes, soc) {
@@ -88,6 +122,11 @@ pub async fn ensure_loader(soc: &'static RockchipSoc) -> Result<Vec<LoaderEntry>
 fn validate(bytes: &[u8], soc: &RockchipSoc) -> Result<Vec<LoaderEntry>, String> {
     crate::qdl::registry::verify_digest(bytes, Some(soc.loader.sha256))?;
     let (header, entries) = parse_loader(bytes)?;
+    check_chip(&header, soc)?;
+    Ok(entries)
+}
+
+fn check_chip(header: &RkBootHeader, soc: &RockchipSoc) -> Result<(), String> {
     if header.supported_chip != soc.chip_tag {
         return Err(format!(
             "loader is for chip {:?}, not {}",
@@ -95,7 +134,7 @@ fn validate(bytes: &[u8], soc: &RockchipSoc) -> Result<Vec<LoaderEntry>, String>
             soc.name
         ));
     }
-    Ok(entries)
+    Ok(())
 }
 
 /// Split an rkbin boot file ("BOOT"/"LDR " header) into its 0x471 and 0x472 uploads.
