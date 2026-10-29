@@ -21,8 +21,8 @@ pub async fn get_rockusb_devices() -> Result<Vec<RockchipDevice>, String> {
     rockchip::detect::get_rockusb_devices()
 }
 
-/// Storages the board's running loader can reach, with sizes, so the picker can offer the largest;
-/// None while the board is still in the boot ROM (sizes come once the flash has uploaded a loader).
+/// Storages the board can reach, with sizes, so the picker can offer the largest. A board in the
+/// boot ROM gets its loader first; None when this build has no loader for its SoC.
 #[tauri::command]
 pub async fn probe_rockusb_storages(
     device_path: String,

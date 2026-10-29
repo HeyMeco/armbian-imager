@@ -2207,6 +2207,12 @@
   border-top: 1px solid var(--border-light);
 }
 
+/* Waiting on the board's storage probe */
+.device-confirm__go:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Board storage picker sits where the target's size would be */
 .device-summary__boardstorage .set-select {
   flex: none;

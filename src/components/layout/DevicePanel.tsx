@@ -43,6 +43,8 @@ interface DevicePanelProps {
   /** Storage on the board a board flash writes to, picked in the confirm summary. */
   boardStorage?: BoardStorage;
   onBoardStorageChange?: (storage: BoardStorage) => void;
+  /** A storage probe is talking to the board (it may re-enumerate); the app pauses its disconnect check. */
+  onBoardBusyChange?: (busy: boolean) => void;
   /** EDL-entry hint ("button"/"jumper") for the selected board, drives the QDL instructions. */
   edlEntry?: string | null;
   /** Upstream selections (manufacturer/board/OS) shown in the confirm summary. */
@@ -68,6 +70,7 @@ export function DevicePanel({
   onFlashTargetChange,
   boardStorage = BOARD_STORAGE.AUTO,
   onBoardStorageChange,
+  onBoardBusyChange,
   edlEntry,
   summary = [],
   boardImage,
@@ -125,22 +128,30 @@ export function DevicePanel({
       });
   }, [probedStorages, t]);
 
-  // Ask a board that already runs a loader what it has; a boot ROM board keeps "Largest available".
+  // Ask the board what it has as soon as it is picked; one in the boot ROM gets its loader first.
   const probePath = isRockusb ? selectedDevice?.path ?? null : null;
+  const [probing, setProbing] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- sizes belong to the board being confirmed
     setProbedStorages(null);
     if (!probePath) return;
     let alive = true;
+    setProbing(true);
+    onBoardBusyChange?.(true);
     probeRockusbStorages(probePath)
       .then((found) => alive && setProbedStorages(found))
       .catch(() => {
         // The flash resolves "Largest available" itself; the probe only adds sizes.
+      })
+      .finally(() => {
+        if (alive) setProbing(false);
+        onBoardBusyChange?.(false);
       });
     return () => {
       alive = false;
+      onBoardBusyChange?.(false);
     };
-  }, [probePath]);
+  }, [probePath, onBoardBusyChange]);
 
   // Once sizes are known, "Largest available" becomes the largest one found; a manual pick stays.
   useEffect(() => {
@@ -327,12 +338,18 @@ export function DevicePanel({
                 {isRockusb && onBoardStorageChange && (
                   <li className="device-summary__target device-summary__boardstorage">
                     <span className="device-summary__label">{t('flash.boardStorage.rowLabel')}</span>
-                    <SelectMenu
-                      value={boardStorage}
-                      options={storageOptions}
-                      onChange={onBoardStorageChange}
-                      ariaLabel={t('flash.boardStorage.rowLabel')}
-                    />
+                    {probing ? (
+                      <span className="device-summary__targetsub">
+                        <RefreshCw size={13} className="spin" /> {t('flash.boardLoader')}
+                      </span>
+                    ) : (
+                      <SelectMenu
+                        value={boardStorage}
+                        options={storageOptions}
+                        onChange={onBoardStorageChange}
+                        ariaLabel={t('flash.boardStorage.rowLabel')}
+                      />
+                    )}
                   </li>
                 )}
                 {/* System/internal target: contextual danger row tied to the storage above. */}
@@ -399,7 +416,7 @@ export function DevicePanel({
                 <button type="button" className="device-confirm__cancel" onClick={onCancel}>
                   {t('common.cancel')}
                 </button>
-                <button type="button" className="device-confirm__go" onClick={onConfirm}>
+                <button type="button" className="device-confirm__go" onClick={onConfirm} disabled={probing}>
                   {t('flash.eraseAndFlash')}
                 </button>
               </div>

@@ -92,7 +92,7 @@ pub async fn rockusb_flash(
         state.ensure_not_cancelled()?;
 
         set_stage(&state, STAGE_RECONNECTING);
-        wait_for_loader(req.device_path, &state).await?
+        wait_for_loader(req.device_path, Some(&state)).await?
     };
 
     let mut device = open_with_retry(&info).await?;
@@ -324,10 +324,12 @@ async fn answers_rockusb(info: &DeviceInfo) -> bool {
 }
 
 /// Wait for the board on the same port to come back running usbplug, whatever its descriptor says.
-async fn wait_for_loader(path: &str, state: &FlashState) -> Result<DeviceInfo, String> {
+async fn wait_for_loader(path: &str, state: Option<&FlashState>) -> Result<DeviceInfo, String> {
     let deadline = Instant::now() + Duration::from_secs(cfg::REENUMERATE_TIMEOUT_SECS);
     loop {
-        state.ensure_not_cancelled()?;
+        if let Some(state) = state {
+            state.ensure_not_cancelled()?;
+        }
         if let Ok((info, found)) = detect::resolve(path) {
             if answers_rockusb(&info).await {
                 log_info!(
@@ -357,12 +359,22 @@ async fn usb_session() -> tokio::sync::MutexGuard<'static, ()> {
 }
 
 /// Storages a board's running loader can reach, with sizes; None while the board is in the boot ROM.
+/// A board in the boot ROM first gets its loader, as the flash would, so the storages are known
+/// when the board is picked; the flash then finds the loader running and skips the upload. None
+/// for a boot ROM whose SoC this build has no loader for.
 pub async fn probe_board_storages(path: &str) -> Result<Option<Vec<StorageInfo>>, String> {
     let _usb = usb_session().await;
     let (info, found) = detect::resolve(path)?;
-    if found.mode != RockchipMode::Loader && !answers_rockusb(&info).await {
-        return Ok(None);
-    }
+    let info = if found.mode == RockchipMode::Loader || answers_rockusb(&info).await {
+        info
+    } else {
+        let Some(soc) = socs::find_by_maskrom_pid(found.product_id) else {
+            return Ok(None);
+        };
+        let entries = loader::ensure_loader(soc).await?;
+        upload_loader(&info, soc, &entries).await?;
+        wait_for_loader(path, None).await?
+    };
     let mut device = open_with_retry(&info).await?;
     let found = probe_storages(&mut device).await?;
     log_info!(MODULE, "Storages on {:?}: {:?}", path, found);

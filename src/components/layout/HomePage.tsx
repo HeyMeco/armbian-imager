@@ -44,6 +44,8 @@ interface HomePageProps {
   /** Storage on the board a board flash writes to. */
   boardStorage?: BoardStorage;
   onBoardStorageChange?: (storage: BoardStorage) => void;
+  /** A storage probe is talking to the board; the app pauses its disconnect check meanwhile. */
+  onBoardBusyChange?: (busy: boolean) => void;
   /** Opens Settings > About, where the update is detailed */
   onOpenUpdate: () => void;
   isOnline?: boolean;
@@ -236,6 +238,7 @@ export function HomePage({
   onFlashTargetChange,
   boardStorage = BOARD_STORAGE.AUTO,
   onBoardStorageChange,
+  onBoardBusyChange,
   onOpenUpdate,
   isOnline = true,
   entering = false,
@@ -300,6 +303,7 @@ export function HomePage({
       onFlashTargetChange={onFlashTargetChange}
       boardStorage={boardStorage}
       onBoardStorageChange={onBoardStorageChange}
+      onBoardBusyChange={onBoardBusyChange}
       edlEntry={selectedBoard?.qdl?.edl_entry ?? null}
       summary={deviceSummary}
       boardImage={boardImage}

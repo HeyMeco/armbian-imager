@@ -57,6 +57,8 @@ function AppContent() {
   const [flashTarget, setFlashTarget] = useState<FlashTarget>(FLASH_TARGET.DISK);
   const [boardStorage, setBoardStorage] = useState<BoardStorage>(BOARD_STORAGE.AUTO);
   const flashMethod = selectedImage ? resolveFlashMethod(selectedImage, flashTarget) : undefined;
+  // A storage probe may re-enumerate the board (Maskrom -> loader), which must not read as an unplug.
+  const [boardBusy, setBoardBusy] = useState(false);
   // Opt-in autoconfig profile id picked at flash time; null means unchanged behaviour.
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [autoconfig, setAutoconfig] = useState<AutoconfigConfig | null>(null);
@@ -208,7 +210,7 @@ function AppContent() {
     selectedDevice,
     targetBus(flashMethod),
     useCallback(() => setSelectedDevice(null), []),
-    !isFlashing
+    !isFlashing && !boardBusy
   );
 
   // Receive the opt-in autoconfig profile id chosen in the DevicePanel confirm view
@@ -703,6 +705,7 @@ function AppContent() {
             onFlashTargetChange={handleFlashTargetChange}
             boardStorage={boardStorage}
             onBoardStorageChange={setBoardStorage}
+            onBoardBusyChange={setBoardBusy}
             onOpenUpdate={() => openSettings(SETTINGS_VIEW.ABOUT)}
             isOnline={isOnline}
             entering={entering}
