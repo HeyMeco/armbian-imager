@@ -675,6 +675,52 @@ async fn diagnose_mismatch(
             );
         }
     }
+
+    // Reads of other sizes and places around the failure: is the cut exact at this sector, and is
+    // everything beyond it unreadable, or only what 64 KiB reads return?
+    let first_bad = (offset + first as u64) / SECTOR_SIZE;
+    let probes: [(&str, u64, usize); 6] = [
+        ("1 sector at the failure", first_bad, 1),
+        ("one 4 KiB block at the failure", first_bad & !7, 8),
+        (
+            "16 sectors across the failure",
+            first_bad.saturating_sub(8),
+            16,
+        ),
+        ("64 KiB at +1 MiB", first_bad + 2048, 128),
+        ("64 KiB at +256 MiB", first_bad + (256 << 11), 128),
+        (
+            "64 KiB at the last good chunk",
+            first_bad.saturating_sub(128),
+            128,
+        ),
+    ];
+    for (label, sector, count) in probes {
+        let mut board = vec![0u8; count * SECTOR_SIZE as usize];
+        let Ok(lba) = u32::try_from(sector) else {
+            continue;
+        };
+        let read = with_timeout(device.read_lba(lba, &mut board)).await;
+        let mut want = vec![0u8; board.len()];
+        let have_image = image.seek(SeekFrom::Start(sector * SECTOR_SIZE)).is_ok()
+            && image.read_exact(&mut want).is_ok();
+        let verdict = match read {
+            Ok(Ok(_)) if have_image && board == want => "matches the image".to_string(),
+            Ok(Ok(_)) if board.iter().all(|b| *b == 0xcc) => "all 0xcc".to_string(),
+            Ok(Ok(_)) => match board.iter().position(|b| *b == 0xcc) {
+                Some(i) if board[i..].iter().all(|b| *b == 0xcc) => {
+                    format!(
+                        "real data, then 0xcc from +{i} (sector {})",
+                        sector + i as u64 / SECTOR_SIZE
+                    )
+                }
+                _ => format!("other data: {}", hex::encode(&board[..16])),
+            },
+            Ok(Err(e)) => format!("read failed: {e}"),
+            Err(e) => e,
+        };
+        log_error!(MODULE, "  {label} (sector {sector}, {count}): {verdict}");
+    }
 }
 
 /// rockusb addresses 32-bit LBAs, so a board can take up to 2 TiB.
