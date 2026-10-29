@@ -34,7 +34,7 @@ interface DevicePanelProps {
   selectedDevice: BlockDevice | null;
   /** Flash method for the selected image and target ("block", "qdl", "qdl-ufs" or "rockusb"). */
   flashMethod?: FlashMethod;
-  /** Offer the disk vs Rockchip board switch (block image of a Rockchip board, or a custom file). */
+  /** Offer the disk vs Rockchip board switch (block image whose board isn't known to be non-Rockchip). */
   boardFlashAvailable?: boolean;
   flashTarget?: FlashTarget;
   onFlashTargetChange?: (target: FlashTarget) => void;

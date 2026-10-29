@@ -8,7 +8,7 @@ import { getCachedBoardImage } from '../../hooks/useTauri';
 import { IMAGE_VARIANT } from '../../config';
 import { isDetectedBoard, formatImageIdentity, formatKernelLabel } from '../../utils';
 import type { BoardInfo, ImageInfo, BlockDevice, Manufacturer, FlashMethod, FlashTarget, BoardStorage } from '../../types';
-import { BOARD_STORAGE, FLASH_METHOD, FLASH_TARGET, deriveFlashMethod, isBoardMethod, isRockchipSoc, resolveFlashMethod } from '../../types';
+import { BOARD_STORAGE, FLASH_METHOD, FLASH_TARGET, deriveFlashMethod, isBoardMethod, mayBeRockchipBoard, resolveFlashMethod } from '../../types';
 import { MarqueeText, MotdTip, BoardImage, UpdateEntry } from '../shared';
 import { ManufacturerPanel } from './ManufacturerPanel';
 import { BoardPanel } from './BoardPanel';
@@ -270,11 +270,13 @@ export function HomePage({
   const deviceMeta = selectedDevice ? selectedDevice.size_formatted : null;
   const flashMethod = selectedImage ? resolveFlashMethod(selectedImage, flashTarget) : undefined;
   const dStep = deviceStepMeta(flashMethod, t);
-  // Any block image can go straight to a Rockchip board; a custom file with no known board might be for one.
+  // A block image can go straight to a Rockchip board unless the board is known to use another SoC.
+  // The API leaves `soc` null for most boards, so unknown counts as possibly Rockchip; the backend
+  // still refuses a chip mismatch whenever both sides are known.
   const boardFlashAvailable =
     !!selectedImage &&
     deriveFlashMethod(selectedImage) === FLASH_METHOD.BLOCK &&
-    (isRockchipSoc(selectedBoard?.soc) || (!!isCustomImage && !hasDetectedBoard));
+    mayBeRockchipBoard(selectedBoard?.soc);
 
   // Upstream selections shown in the inline storage confirm summary.
   const deviceSummary = [

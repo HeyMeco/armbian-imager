@@ -159,6 +159,11 @@ export function isRockchipSoc(soc: string | null | undefined): boolean {
   return !!soc && /^(rockchip\s*)?(rk|rv|px)\d/i.test(soc.trim());
 }
 
+/** The board may be a Rockchip one: its SoC is Rockchip, or unknown (the API leaves `soc` null for most boards). */
+export function mayBeRockchipBoard(soc: string | null | undefined): boolean {
+  return !soc?.trim() || isRockchipSoc(soc);
+}
+
 /** Whether an image flashes over EDL; the EDL-aware counterpart of a plain block write. */
 export function isEdlImage(image: Pick<ImageInfo, 'format' | 'storage'>): boolean {
   return isEdlMethod(deriveFlashMethod(image));
