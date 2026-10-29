@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "書き込みが完了しました。デバイスを安全に取り外せます。",
     "successHintQdlReady": "デバイスは起動できる状態です。",
     "successHintVerifySkipped": "確認を中断したため、書き込み内容は検証されていません。",
+    "successHintUfsNotVerified": "未検証：ボードのローダーが UFS を読み戻せないため、書き込みは確認されていません。",
     "noShaTitle": "チェックサムがありません",
     "noShaMessage": "このイメージにはSHAチェックサムがないため、書き込んだデータを検証できません。このまま書き込みを続行します。",
     "extracting": "アーカイブを展開しています...",

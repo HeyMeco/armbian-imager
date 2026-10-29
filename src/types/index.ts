@@ -247,6 +247,8 @@ export interface FlashProgress {
   partitions_written: number;
   /** Rockchip board flash stage (BOARD_STAGE values); null unless one is running */
   board_stage: string | null;
+  /** A board flash skipped its read-back because the loader can't read that storage back (UFS) */
+  board_verify_skipped: boolean;
   /** Autoconfig work before the write (image copy, then profile injection); null otherwise */
   prep_stage: FlashPrepStage | null;
   /** A flash waits for the previous one to finish; the other fields still describe that one */

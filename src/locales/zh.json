@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "烧录完成。您可以安全地取出设备。",
     "successHintQdlReady": "设备已可正常启动。",
     "successHintVerifySkipped": "校验已中断，未对写入内容进行检查。",
+    "successHintUfsNotVerified": "未校验：开发板的引导程序无法回读 UFS，因此未检查写入内容。",
     "noShaTitle": "没有可用的校验和",
     "noShaMessage": "此镜像没有 SHA 校验和，因此无法校验已写入的数据。烧录仍会继续。",
     "extracting": "正在提取归档文件……",

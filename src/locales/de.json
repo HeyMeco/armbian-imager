@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "Flash abgeschlossen. Du kannst das Gerät jetzt sicher entfernen.",
     "successHintQdlReady": "Das Gerät ist startbereit.",
     "successHintVerifySkipped": "Prüfung abgebrochen: Der Schreibvorgang wurde nicht kontrolliert.",
+    "successHintUfsNotVerified": "Nicht geprüft: Der Loader des Boards kann UFS nicht zurücklesen, daher wurde das Schreiben nicht kontrolliert.",
     "noShaTitle": "Keine Prüfsumme verfügbar",
     "noShaMessage": "Für dieses Image gibt es keine SHA-Prüfsumme, daher lassen sich die geschriebenen Daten nicht überprüfen. Das Flashen wird trotzdem fortgesetzt.",
     "extracting": "Archiv wird entpackt...",

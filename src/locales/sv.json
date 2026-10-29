@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "Flashningen är klar. Du kan koppla från enheten när du vill.",
     "successHintQdlReady": "Enheten är redo att starta.",
     "successHintVerifySkipped": "Kontrollen avbröts: skrivningen kontrollerades inte.",
+    "successHintUfsNotVerified": "Inte verifierat: kortets laddare kan inte läsa tillbaka UFS, så skrivningen kontrollerades inte.",
     "noShaTitle": "Ingen kontrollsumma tillgänglig",
     "noShaMessage": "Den här avbildningen saknar SHA-kontrollsumma, så den skrivna datan kan inte verifieras. Flashningen fortsätter ändå.",
     "extracting": "Extraherar arkiv...",

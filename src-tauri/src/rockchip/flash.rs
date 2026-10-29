@@ -151,7 +151,17 @@ pub async fn rockusb_flash(
     state.total_bytes.store(image_len, Ordering::SeqCst);
     write_image(&mut device, &mut image, image_len, &state).await?;
 
-    if req.verify {
+    // RK3576 usbplug returns its 0xcc fill buffer for UFS reads past 32 MiB while the writes land
+    // (checked on a booted Rock 4D), so a UFS read-back would fail a good flash.
+    let verify = req.verify && storage != BoardStorage::Ufs;
+    if req.verify && !verify {
+        log_warn!(
+            MODULE,
+            "Skipping the read-back: the loader can't read UFS back reliably"
+        );
+        state.board.verify_skipped.store(true, Ordering::SeqCst);
+    }
+    if verify {
         set_stage(&state, STAGE_VERIFYING);
         state.is_verifying.store(true, Ordering::SeqCst);
         if let Err(e) = verify_image(&mut device, &mut image, image_len, &state).await {

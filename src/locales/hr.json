@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "Snimanje je dovršeno. Uređaj možete sigurno ukloniti.",
     "successHintQdlReady": "Uređaj je spreman za pokretanje.",
     "successHintVerifySkipped": "Provjera je prekinuta: zapisivanje nije provjereno.",
+    "successHintUfsNotVerified": "Nije provjereno: loader ploče ne može čitati UFS natrag, pa zapis nije provjeren.",
     "noShaTitle": "Kontrolna suma nije dostupna",
     "noShaMessage": "Ova slika nema SHA kontrolnu sumu, pa se zapisani podaci ne mogu provjeriti. Snimanje će se svejedno nastaviti.",
     "extracting": "Raspakiravanje arhive...",

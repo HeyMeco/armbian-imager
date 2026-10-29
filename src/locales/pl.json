@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "Zapis zakończony. Możesz bezpiecznie odłączyć urządzenie.",
     "successHintQdlReady": "Urządzenie jest gotowe do uruchomienia.",
     "successHintVerifySkipped": "Sprawdzanie przerwane: zapis nie został zweryfikowany.",
+    "successHintUfsNotVerified": "Bez weryfikacji: loader płytki nie potrafi odczytać UFS z powrotem, więc zapis nie został sprawdzony.",
     "noShaTitle": "Brak sumy kontrolnej",
     "noShaMessage": "Ten obraz nie ma sumy kontrolnej SHA, więc nie można zweryfikować zapisanych danych. Zapis i tak będzie kontynuowany.",
     "extracting": "Wyodrębnianie archiwum...",

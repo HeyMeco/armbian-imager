@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "Yazma tamamlandı. Cihazı güvenle çıkarabilirsiniz.",
     "successHintQdlReady": "Cihaz önyüklemeye hazır.",
     "successHintVerifySkipped": "Doğrulama durduruldu: yazma denetlenmedi.",
+    "successHintUfsNotVerified": "Doğrulanmadı: kartın yükleyicisi UFS'yi geri okuyamadığı için yazma kontrol edilmedi.",
     "noShaTitle": "Sağlama toplamı yok",
     "noShaMessage": "Bu imajın SHA sağlama toplamı yok, bu nedenle yazılan veriler doğrulanamaz. Yazma işlemi yine de sürecek.",
     "extracting": "Arşiv çıkarılıyor...",

@@ -38,6 +38,8 @@ pub struct FlashProgress {
     pub partitions_written: u64,
     /// Rockchip board flash stage (e.g. "loader", "writing"); None unless one is running
     pub board_stage: Option<String>,
+    /// A board flash skipped its read-back: the loader can't read that storage back (UFS)
+    pub board_verify_skipped: bool,
     /// Autoconfig work before the write: "copying", then "applying_profile"
     pub prep_stage: Option<&'static str>,
     /// A flash is waiting for the previous one to finish; every other field still describes that one
@@ -137,6 +139,10 @@ pub async fn get_flash_progress(state: State<'_, AppState>) -> Result<FlashProgr
         partitions_total,
         partitions_written,
         board_stage: fs.board.current_stage(),
+        board_verify_skipped: fs
+            .board
+            .verify_skipped
+            .load(std::sync::atomic::Ordering::SeqCst),
         prep_stage: fs.prep_stage(),
         is_waiting,
     })

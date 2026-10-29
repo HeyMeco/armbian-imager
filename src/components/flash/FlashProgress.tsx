@@ -54,6 +54,7 @@ export function FlashProgress({
     error,
     showShaWarning,
     verifyAborted,
+    boardVerifySkipped,
     cancelledAfterWrite,
     handleCancel,
     handleRetry,
@@ -201,10 +202,10 @@ export function FlashProgress({
                         ? t('flash.successHintDeviceCustom')
                         : t('flash.successHintDevice', { boardName: board.name })}
                   </p>
-                  {verifyAborted && (
+                  {(verifyAborted || boardVerifySkipped) && (
                     <p className="flash-success-caveat">
                       <ShieldOff size={15} aria-hidden="true" />
-                      {t('flash.successHintVerifySkipped')}
+                      {t(boardVerifySkipped ? 'flash.successHintUfsNotVerified' : 'flash.successHintVerifySkipped')}
                     </p>
                   )}
                 </>

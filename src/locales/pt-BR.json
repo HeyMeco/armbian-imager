@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "Gravação concluída. Você pode remover o dispositivo com segurança.",
     "successHintQdlReady": "O dispositivo está pronto para iniciar.",
     "successHintVerifySkipped": "Verificação interrompida: a gravação não foi conferida.",
+    "successHintUfsNotVerified": "Não verificado: o loader da placa não consegue ler o UFS de volta, então a gravação não foi conferida.",
     "noShaTitle": "Checksum indisponível",
     "noShaMessage": "Esta imagem não tem checksum SHA, então não é possível verificar os dados gravados. A gravação vai continuar mesmo assim.",
     "extracting": "Extraindo arquivo...",

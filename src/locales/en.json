@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "Flashing finished. You can safely remove the device.",
     "successHintQdlReady": "The device is ready to boot.",
     "successHintVerifySkipped": "Verification stopped, so the write wasn't checked.",
+    "successHintUfsNotVerified": "Not verified: the board's loader can't read UFS back, so the write wasn't checked.",
     "noShaTitle": "No checksum available",
     "noShaMessage": "This image has no SHA checksum, so the written data can't be verified. Flashing will continue anyway.",
     "extracting": "Extracting archive...",

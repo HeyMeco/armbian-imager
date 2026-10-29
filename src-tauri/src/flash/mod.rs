@@ -65,6 +65,8 @@ pub struct BoardProgress {
     pub is_active: AtomicBool,
     /// Current stage (e.g., "loader", "writing"), see `rockchip::STAGE_*`
     pub stage: std::sync::Mutex<String>,
+    /// The read-back was skipped because the storage can't be read back (UFS through usbplug)
+    pub verify_skipped: AtomicBool,
 }
 
 impl BoardProgress {
@@ -72,12 +74,14 @@ impl BoardProgress {
         Self {
             is_active: AtomicBool::new(false),
             stage: std::sync::Mutex::new(String::new()),
+            verify_skipped: AtomicBool::new(false),
         }
     }
 
     pub fn reset(&self) {
         self.is_active.store(false, Ordering::SeqCst);
         *self.stage.lock().unwrap_or_else(|p| p.into_inner()) = String::new();
+        self.verify_skipped.store(false, Ordering::SeqCst);
     }
 
     /// The stage while a board flash runs, else None.

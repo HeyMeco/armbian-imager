@@ -68,6 +68,8 @@ interface UseFlashOperationReturn {
   imagePath: string | null;
   showShaWarning: boolean;
   verifyAborted: boolean;
+  /** A rockusb flash skipped its read-back because the loader can't read that storage back (UFS). */
+  boardVerifySkipped: boolean;
   /** A board flash (EDL or rockusb) cancelled after the board's storage started to change. */
   cancelledAfterWrite: boolean;
   handleCancel: () => Promise<void>;
@@ -127,6 +129,7 @@ export function useFlashOperation({
   const [imagePath, setImagePath] = useState<string | null>(null);
   const [showShaWarning, setShowShaWarning] = useState(false);
   const [verifyAborted, setVerifyAborted] = useState(false);
+  const [boardVerifySkipped, setBoardVerifySkipped] = useState(false);
   const [cancelledAfterWrite, setCancelledAfterWrite] = useState(false);
 
   // Refs for lifecycle management
@@ -217,6 +220,8 @@ export function useFlashOperation({
   // EDL and rockusb write a board over USB: no disk authorization, the device re-enumerates mid-flash.
   const isBoardFlash = isBoardMethod(flashMethod);
   const bus = targetBus(flashMethod);
+  // The loader can't read UFS back, so a UFS board flash has no verify step (the backend skips it too).
+  const boardSkipsVerify = isRockusbFlash && boardStorage === BOARD_STORAGE.UFS;
 
   /** Check the device is connected; trigger the disconnect handler and return false if not */
   const checkDeviceOrDisconnect = useCallback(async (): Promise<boolean> => {
@@ -294,7 +299,7 @@ export function useFlashOperation({
 
       const needsDecompress = await checkNeedsDecompression(customPath);
       if (isAborted()) return;
-      setPhases(buildPhases({ download: false, prepare: needsDecompress || hasProfile, verify: !skipVerifyRef.current }));
+      setPhases(buildPhases({ download: false, prepare: needsDecompress || hasProfile, verify: !boardSkipsVerify && !skipVerifyRef.current }));
 
       if (needsDecompress) {
         setStage('decompressing');
@@ -506,6 +511,13 @@ export function useFlashOperation({
         await flashImage(path, device.path, device.size, !skipVerifyRef.current, autoconfigRef.current ?? undefined);
       }
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (isRockusbFlash) {
+        try {
+          setBoardVerifySkipped((await getFlashProgress()).board_verify_skipped);
+        } catch {
+          setBoardVerifySkipped(boardSkipsVerify && !skipVerifyRef.current);
+        }
+      }
       setStage('complete');
       setProgress(100);
       setFlashFailureCount(0);
@@ -596,7 +608,7 @@ export function useFlashOperation({
           buildPhases({
             download: !cached,
             prepare: isQdlMode || hasProfile || (!cached && isCompressedImage(image.direct_url)),
-            verify: !isEdlFlash && !skipVerifyRef.current,
+            verify: !isEdlFlash && !boardSkipsVerify && !skipVerifyRef.current,
           })
         );
         await startDownload();
@@ -680,7 +692,7 @@ export function useFlashOperation({
         setPhases(buildPhases({
           download: false,
           prepare: isQdlMode || hasProfile,
-          verify: isRockusbFlash && !skipVerifyRef.current,
+          verify: isRockusbFlash && !boardSkipsVerify && !skipVerifyRef.current,
         }));
         await startFlash(imagePath);
         return;
@@ -781,6 +793,7 @@ export function useFlashOperation({
     imagePath,
     showShaWarning,
     verifyAborted,
+    boardVerifySkipped,
     cancelledAfterWrite,
     handleCancel,
     handleRetry,

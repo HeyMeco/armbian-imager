@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "Flash voltooid. Je kunt het apparaat veilig verwijderen.",
     "successHintQdlReady": "Het apparaat is klaar om op te starten.",
     "successHintVerifySkipped": "Controle afgebroken: het schrijven is niet gecontroleerd.",
+    "successHintUfsNotVerified": "Niet geverifieerd: de loader van het board kan UFS niet teruglezen, dus het schrijven is niet gecontroleerd.",
     "noShaTitle": "Geen checksum beschikbaar",
     "noShaMessage": "Dit image heeft geen SHA-checksum, dus de geschreven data kan niet worden geverifieerd. Het flashen gaat toch door.",
     "extracting": "Archief uitpakken...",

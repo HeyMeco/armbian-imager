@@ -51,6 +51,7 @@
     "successHintDeviceCustom": "Scrittura completata. Puoi rimuovere il dispositivo in sicurezza.",
     "successHintQdlReady": "Il dispositivo è pronto per l'avvio.",
     "successHintVerifySkipped": "Verifica interrotta: la scrittura non è stata controllata.",
+    "successHintUfsNotVerified": "Non verificato: il loader della scheda non può rileggere l'UFS, quindi la scrittura non è stata controllata.",
     "noShaTitle": "Nessun checksum disponibile",
     "noShaMessage": "Questa immagine non ha un checksum SHA, quindi non è possibile verificare i dati scritti. La scrittura proseguirà comunque.",
     "extracting": "Estrazione dell'archivio...",
