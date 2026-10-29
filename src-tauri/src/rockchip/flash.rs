@@ -133,16 +133,29 @@ pub async fn rockusb_flash(
     if req.verify {
         set_stage(&state, STAGE_VERIFYING);
         state.is_verifying.store(true, Ordering::SeqCst);
-        verify_image(&mut device, &mut image, image_len, &state).await?;
+        if let Err(e) = verify_image(&mut device, &mut image, image_len, &state).await {
+            // A cancelled read-back still leaves the whole image written: boot it, as a finished flash would.
+            if e == verify_cancelled_err() {
+                reset_board(&mut device).await;
+            }
+            return Err(e);
+        }
     }
 
     set_stage(&state, STAGE_RESETTING);
-    if let Err(e) = with_timeout(device.reset_device(ResetOpcode::Reset)).await {
-        log_warn!(MODULE, "Board reset failed (non-fatal): {}", e);
-    }
+    reset_board(&mut device).await;
     set_stage(&state, STAGE_COMPLETE);
     log_info!(MODULE, "Board flash completed");
     Ok(())
+}
+
+/// Reboot the board into the image just written; a board that ignores it only needs a power cycle.
+async fn reset_board(device: &mut Device) {
+    match with_timeout(device.reset_device(ResetOpcode::Reset)).await {
+        Ok(Ok(())) => log_info!(MODULE, "Board reset"),
+        Ok(Err(e)) => log_warn!(MODULE, "Board reset failed (non-fatal): {}", e),
+        Err(e) => log_warn!(MODULE, "Board reset failed (non-fatal): {}", e),
+    }
 }
 
 fn set_stage(state: &FlashState, stage: &str) {
