@@ -71,6 +71,15 @@
         "timezone": "Fuseau horaire",
         "keys": "Clés SSH"
       }
+    },
+    "boardConnecting": "Connexion à la carte...",
+    "boardLoader": "Démarrage du loader de la carte...",
+    "boardStorage": {
+      "rowLabel": "Stockage de la carte",
+      "emmc": "eMMC",
+      "sd": "Carte SD",
+      "spinor": "Flash SPI NOR",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Verrouillé",
     "qdlNotFound": "Aucun appareil EDL trouvé. Mettez votre carte en mode EDL et connectez-la en USB.",
     "qdlInstructions": "Placez le cavalier sur les broches JCTL, puis connectez le câble USB-C.",
-    "qdlInstructionsButton": "Maintenez le bouton EDL enfoncé à la mise sous tension, puis branchez le câble USB."
+    "qdlInstructionsButton": "Maintenez le bouton EDL enfoncé à la mise sous tension, puis branchez le câble USB.",
+    "targetLabel": "Écrire sur",
+    "targetDisk": "Disque ou carte",
+    "targetBoard": "Carte Rockchip",
+    "rockusbNotFound": "Aucune carte Rockchip trouvée. Connectez la carte en USB en mode Maskrom ou Loader.",
+    "rockusbInstructions": "Maintenez le bouton Maskrom ou Recovery, branchez le port USB OTG de la carte sur cet ordinateur, puis relâchez le bouton."
   },
   "header": {
     "stepManufacturer": "Fabricant",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Ouvrez un ticket sur GitHub",
     "logsStepPaste": "Collez le lien et décrivez le problème",
     "logsCaption": "Logs Armbian",
-    "openInBrowser": "Ouvrir dans le navigateur"
+    "openInBrowser": "Ouvrir dans le navigateur",
+    "boardDevicesTitle": "Impossible de rechercher les cartes Rockchip",
+    "boardDevicesHint": "Reconnectez la carte en USB, puis réessayez."
   },
   "error": {
     "downloadFailed": "Échec du téléchargement",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Le périphérique n'a pas pu être relu pour vérifier l'écriture. Reconnectez-le et réessayez, ou essayez une autre carte ou un autre lecteur.",
     "imageDecompressFailed": "L'image n'a pas pu être décompressée. Le fichier est peut-être corrompu ou incomplet. Téléchargez-le à nouveau ou choisissez un autre fichier.",
     "imageInvalid": "Le fichier image est vide ou inutilisable. Sélectionnez-le à nouveau ou téléchargez-en une nouvelle copie.",
-    "flashBusy": "Le flash précédent n'est pas encore terminé. Patientez un instant et réessayez."
+    "flashBusy": "Le flash précédent n'est pas encore terminé. Patientez un instant et réessayez.",
+    "rockusbDeviceNotFound": "La carte sélectionnée n'est plus connectée. Reconnectez-la en mode Maskrom ou Loader et sélectionnez-la à nouveau.",
+    "rockusbMultipleDevices": "Plusieurs cartes Rockchip sont sur ce port USB. Ne connectez que la carte à flasher.",
+    "rockusbPermissionDenied": "Accès USB à la carte refusé. Fermez les autres outils de flash comme RKDevTool ou rkdeveloptool, puis réessayez.",
+    "rockusbPermissionDeniedLinux": "Accès USB refusé. Installez une règle udev, puis reconnectez la carte : echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "Le pilote USB de la carte n'est pas utilisable. Sous Windows, remplacez-le par le pilote WinUSB avec Zadig (zadig.akeo.ie), puis reconnectez la carte.",
+    "rockusbConnectionFailed": "Impossible de se connecter à la carte. Reconnectez-la en mode Maskrom ou Loader et réessayez.",
+    "rockusbDisconnected": "La carte s'est déconnectée pendant le flash. Reconnectez-la en mode Maskrom et réessayez.",
+    "rockusbTimeout": "La carte ne répond plus. Reconnectez-la en mode Maskrom et réessayez.",
+    "rockusbUnsupportedSoc": "Cette version d'Armbian Imager n'a pas de loader Maskrom pour la puce de cette carte. Démarrez la carte en mode Loader, ou écrivez plutôt sur un disque ou une carte mémoire.",
+    "rockusbSocMismatch": "Cette image est prévue pour une autre puce que celle de la carte connectée. Choisissez l'image de votre carte.",
+    "rockusbLoaderUnavailable": "Impossible de télécharger le loader de la carte. Vérifiez votre connexion internet et réessayez.",
+    "rockusbLoaderFailed": "La carte n'a pas accepté le loader. Éteignez-la, repassez en mode Maskrom et réessayez.",
+    "rockusbNoLoaderMode": "Le loader a été envoyé, mais la carte n'est pas réapparue en USB. Éteignez-la, repassez en mode Maskrom et réessayez.",
+    "rockusbStorageUnavailable": "La carte n'a pas le stockage choisi, ou son loader n'y a pas accès. Choisissez un autre stockage et réessayez."
   },
   "custom": {
     "customImage": "Image personnalisée",

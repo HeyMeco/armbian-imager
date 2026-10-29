@@ -71,6 +71,15 @@
         "timezone": "Tijdzone",
         "keys": "SSH-sleutels"
       }
+    },
+    "boardConnecting": "Verbinden met het board...",
+    "boardLoader": "Loader van het board starten...",
+    "boardStorage": {
+      "rowLabel": "Opslag van het board",
+      "emmc": "eMMC",
+      "sd": "SD-kaart",
+      "spinor": "SPI NOR-flash",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Vergrendeld",
     "qdlNotFound": "Geen EDL-apparaat gevonden. Zet je board in EDL-modus en sluit het aan via USB.",
     "qdlInstructions": "Plaats de jumper op de JCTL-pinnen en sluit de USB-C-kabel aan.",
-    "qdlInstructionsButton": "Houd de EDL-knop ingedrukt bij het inschakelen en sluit dan de USB-kabel aan."
+    "qdlInstructionsButton": "Houd de EDL-knop ingedrukt bij het inschakelen en sluit dan de USB-kabel aan.",
+    "targetLabel": "Schrijven naar",
+    "targetDisk": "Schijf of kaart",
+    "targetBoard": "Rockchip-board",
+    "rockusbNotFound": "Geen Rockchip-board gevonden. Sluit het board via USB aan in Maskrom- of Loader-modus.",
+    "rockusbInstructions": "Houd de Maskrom- of Recovery-knop ingedrukt, sluit de USB OTG-poort van het board aan op deze computer en laat de knop los."
   },
   "header": {
     "stepManufacturer": "Fabrikant",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Open een issue op GitHub",
     "logsStepPaste": "Plak de link en beschrijf het probleem",
     "logsCaption": "Armbian-logs",
-    "openInBrowser": "Openen in browser"
+    "openInBrowser": "Openen in browser",
+    "boardDevicesTitle": "Kon niet naar Rockchip-boards zoeken",
+    "boardDevicesHint": "Sluit het board opnieuw aan via USB en probeer het opnieuw."
   },
   "error": {
     "downloadFailed": "Download mislukt",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Het apparaat kon niet worden teruggelezen om het schrijven te verifiëren. Sluit het opnieuw aan en probeer het nog eens, of probeer een andere kaart of lezer.",
     "imageDecompressFailed": "De image kon niet worden uitgepakt. Het bestand is mogelijk beschadigd of onvolledig. Download het opnieuw of kies een ander bestand.",
     "imageInvalid": "Het image-bestand is leeg of onbruikbaar. Kies het opnieuw of download een nieuwe kopie.",
-    "flashBusy": "De vorige flash wordt nog afgerond. Wacht even en probeer het opnieuw."
+    "flashBusy": "De vorige flash wordt nog afgerond. Wacht even en probeer het opnieuw.",
+    "rockusbDeviceNotFound": "Het gekozen board is niet meer aangesloten. Sluit het opnieuw aan in Maskrom- of Loader-modus en kies het opnieuw.",
+    "rockusbMultipleDevices": "Er zit meer dan één Rockchip-board op deze USB-poort. Sluit alleen het board aan dat je wilt flashen.",
+    "rockusbPermissionDenied": "USB-toegang tot het board geweigerd. Sluit andere flashtools zoals RKDevTool of rkdeveloptool en probeer het opnieuw.",
+    "rockusbPermissionDeniedLinux": "USB-toegang geweigerd. Installeer een udev-regel en sluit het board daarna opnieuw aan: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "Het USB-stuurprogramma van het board is niet bruikbaar. Vervang het op Windows met Zadig (zadig.akeo.ie) door het WinUSB-stuurprogramma en sluit het board opnieuw aan.",
+    "rockusbConnectionFailed": "Kon geen verbinding maken met het board. Sluit het opnieuw aan in Maskrom- of Loader-modus en probeer het opnieuw.",
+    "rockusbDisconnected": "Het board werd losgekoppeld tijdens het flashen. Sluit het opnieuw aan in Maskrom-modus en probeer het opnieuw.",
+    "rockusbTimeout": "Het board reageert niet meer. Sluit het opnieuw aan in Maskrom-modus en probeer het opnieuw.",
+    "rockusbUnsupportedSoc": "Deze versie van Armbian Imager heeft geen Maskrom-loader voor de chip van dit board. Start het board in Loader-modus, of schrijf naar een schijf of kaart.",
+    "rockusbSocMismatch": "Deze image is voor een andere chip dan het aangesloten board. Kies de image voor jouw board.",
+    "rockusbLoaderUnavailable": "Kon de loader van het board niet downloaden. Controleer je internetverbinding en probeer het opnieuw.",
+    "rockusbLoaderFailed": "Het board accepteerde de loader niet. Zet het uit, ga opnieuw naar Maskrom-modus en probeer het opnieuw.",
+    "rockusbNoLoaderMode": "De loader is verstuurd, maar het board kwam niet terug via USB. Zet het uit, ga opnieuw naar Maskrom-modus en probeer het opnieuw.",
+    "rockusbStorageUnavailable": "Het board heeft de gekozen opslag niet, of de loader kan er niet bij. Kies andere opslag en probeer het opnieuw."
   },
   "custom": {
     "customImage": "Aangepaste image",

@@ -3,12 +3,15 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  RefreshCw, TriangleAlert, Shield, Usb, Lock, Cpu, ArrowRight, ChevronDown,
+  RefreshCw, TriangleAlert, Shield, Usb, Lock, Cpu, ArrowRight, ChevronDown, HardDrive,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PanelError, DeviceIcon, getDeviceBadge, BoardImage, MarqueeText, EmptyState } from '../shared';
-import type { BlockDevice, AutoconfigProfile, AutoconfigProfilesChangedDetail, FlashMethod } from '../../types';
-import { isEdlMethod } from '../../types';
+import type {
+  BlockDevice, AutoconfigProfile, AutoconfigProfilesChangedDetail, FlashMethod, FlashTarget, BoardStorage,
+} from '../../types';
+import { BOARD_STORAGE, FLASH_TARGET, isBoardMethod, isEdlMethod, targetBus } from '../../types';
+import { SegmentedControl, SelectMenu } from '../settings/controls';
 import { getTargetDevices } from '../../hooks/useTauri';
 import { getAutoconfigProfiles, getAllowSystemDevices } from '../../hooks/useSettings';
 import { useAsyncData } from '../../hooks/useAsyncData';
@@ -29,8 +32,15 @@ interface DevicePanelProps {
   onCancel: () => void;
   /** The picked device; when set, the panel shows the confirm summary. */
   selectedDevice: BlockDevice | null;
-  /** Flash method for the selected image ("block", "qdl", or "qdl-ufs"). */
+  /** Flash method for the selected image and target ("block", "qdl", "qdl-ufs" or "rockusb"). */
   flashMethod?: FlashMethod;
+  /** Offer the disk vs Rockchip board switch (block image of a Rockchip board, or a custom file). */
+  boardFlashAvailable?: boolean;
+  flashTarget?: FlashTarget;
+  onFlashTargetChange?: (target: FlashTarget) => void;
+  /** Storage on the board a board flash writes to, picked in the confirm summary. */
+  boardStorage?: BoardStorage;
+  onBoardStorageChange?: (storage: BoardStorage) => void;
   /** EDL-entry hint ("button"/"jumper") for the selected board, drives the QDL instructions. */
   edlEntry?: string | null;
   /** Upstream selections (manufacturer/board/OS) shown in the confirm summary. */
@@ -51,6 +61,11 @@ export function DevicePanel({
   onCancel,
   selectedDevice,
   flashMethod,
+  boardFlashAvailable = false,
+  flashTarget = FLASH_TARGET.DISK,
+  onFlashTargetChange,
+  boardStorage = BOARD_STORAGE.EMMC,
+  onBoardStorageChange,
   edlEntry,
   summary = [],
   boardImage,
@@ -77,6 +92,23 @@ export function DevicePanel({
 
   // Both QDL (TAR) and UFS images flash over EDL, so they share device detection (getQdlDevices).
   const isQdlMode = isEdlMethod(flashMethod);
+  // A Rockchip board over USB: Maskrom or Loader devices instead of disks.
+  const bus = targetBus(flashMethod);
+  const isRockusb = bus === 'rockusb';
+  // Either kind of board is a USB device, not a storage drive.
+  const isUsbBoard = isBoardMethod(flashMethod);
+
+  const targetOptions = useMemo(
+    () => [
+      { value: FLASH_TARGET.DISK, label: t('device.targetDisk'), icon: <HardDrive /> },
+      { value: FLASH_TARGET.BOARD, label: t('device.targetBoard'), icon: <Cpu /> },
+    ],
+    [t]
+  );
+  const storageOptions = useMemo(
+    () => Object.values(BOARD_STORAGE).map((value) => ({ value, label: t(`flash.boardStorage.${value}`) })),
+    [t]
+  );
 
   // Autoconfig profiles apply to Armbian images (both sd/.img.xz and QDL); hidden for generic custom images.
   const showAutoconfig = supportsAutoconfig;
@@ -146,8 +178,8 @@ export function DevicePanel({
   }, []);
 
   const { data: rawDevices, loading, error: loadError, reload } = useAsyncData<BlockDevice[]>(
-    () => getTargetDevices(isQdlMode),
-    [isQdlMode]
+    () => getTargetDevices(bus),
+    [bus]
   );
   const { error, retrying, retry, panelRef } = useErrorRetry(loadError, loading, reload);
 
@@ -180,7 +212,7 @@ export function DevicePanel({
   // Poll for device changes (detect new USB/SD insertions) while browsing.
   const pollDevices = useCallback(async () => {
     try {
-      const newDevices = await getTargetDevices(isQdlMode);
+      const newDevices = await getTargetDevices(bus);
       if (devicesChanged(prevDevicesRef.current, newDevices)) {
         prevDevicesRef.current = newDevices;
         setDevices(sortDevices(newDevices));
@@ -188,7 +220,7 @@ export function DevicePanel({
     } catch {
       // Ignore transient polling errors
     }
-  }, [isQdlMode]);
+  }, [bus]);
 
   useEffect(() => {
     if (selectedDevice) return;
@@ -238,7 +270,7 @@ export function DevicePanel({
                 ))}
                 {/* Target device as a label/value row, consistent with the rows above. */}
                 <li className="device-summary__target">
-                  <span className="device-summary__label">{t(isQdlMode ? 'home.device' : 'home.storage')}</span>
+                  <span className="device-summary__label">{t(isUsbBoard ? 'home.device' : 'home.storage')}</span>
                   <span className="device-summary__targetinfo">
                     <MarqueeText
                       text={selectedDevice.model || selectedDevice.name}
@@ -251,6 +283,18 @@ export function DevicePanel({
                     </span>
                   </span>
                 </li>
+                {/* Board flash: which of the board's storages gets the image (the loader switches to it). */}
+                {isRockusb && onBoardStorageChange && (
+                  <li className="device-summary__target device-summary__boardstorage">
+                    <span className="device-summary__label">{t('flash.boardStorage.rowLabel')}</span>
+                    <SelectMenu
+                      value={boardStorage}
+                      options={storageOptions}
+                      onChange={onBoardStorageChange}
+                      ariaLabel={t('flash.boardStorage.rowLabel')}
+                    />
+                  </li>
+                )}
                 {/* System/internal target: contextual danger row tied to the storage above. */}
                 {selectedDevice.is_system && (
                   <li className="device-summary__syswarn">
@@ -329,13 +373,21 @@ export function DevicePanel({
   return (
     <div className="mfr-panel device-panel" ref={panelRef}>
       <div className="device-panel__head">
+        {boardFlashAvailable && onFlashTargetChange && (
+          <SegmentedControl
+            value={flashTarget}
+            options={targetOptions}
+            onChange={onFlashTargetChange}
+            ariaLabel={t('device.targetLabel')}
+          />
+        )}
         <div className="device-alert">
           <span className="device-alert__icon">
             <TriangleAlert size={16} />
           </span>
           <span className="device-alert__text">{t('flash.dataWarning')}</span>
 
-          {!isQdlMode && !allowSystemDevices && (
+          {!isUsbBoard && !allowSystemDevices && (
             <button
               type="button"
               onClick={() => setShowSystemDevices(!showSystemDevices)}
@@ -353,7 +405,7 @@ export function DevicePanel({
           error={error}
           onRetry={retry}
           retrying={retrying}
-          source={isQdlMode ? 'edl' : 'devices'}
+          source={isQdlMode ? 'edl' : isRockusb ? 'board' : 'devices'}
         />
       ) : (
         <div className="device-panel__body">
@@ -373,9 +425,17 @@ export function DevicePanel({
 
           {filteredDevices.length === 0 && !showSkeleton && !loading && (
             <EmptyState
-              icon={isQdlMode ? Cpu : Usb}
-              title={isQdlMode ? t('device.qdlNotFound') : t('modal.noDevices')}
-              hint={isQdlMode ? t(qdlInstructionsKey(edlEntry)) : t('modal.insertDevice')}
+              icon={isUsbBoard ? Cpu : Usb}
+              title={
+                isQdlMode ? t('device.qdlNotFound') : isRockusb ? t('device.rockusbNotFound') : t('modal.noDevices')
+              }
+              hint={
+                isQdlMode
+                  ? t(qdlInstructionsKey(edlEntry))
+                  : isRockusb
+                    ? t('device.rockusbInstructions')
+                    : t('modal.insertDevice')
+              }
               action={{ label: t('device.refresh'), icon: RefreshCw, onClick: reload }}
             />
           )}

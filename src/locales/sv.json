@@ -71,6 +71,15 @@
         "timezone": "Tidszon",
         "keys": "SSH-nycklar"
       }
+    },
+    "boardConnecting": "Ansluter till kortet...",
+    "boardLoader": "Startar kortets laddare...",
+    "boardStorage": {
+      "rowLabel": "Kortets lagring",
+      "emmc": "eMMC",
+      "sd": "SD-kort",
+      "spinor": "SPI NOR-flash",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Låst",
     "qdlNotFound": "Ingen EDL-enhet hittades. Sätt ditt kort i EDL-läge och anslut via USB.",
     "qdlInstructions": "Placera bygeln på JCTL-pinnarna och anslut sedan USB-C-kabeln.",
-    "qdlInstructionsButton": "Håll EDL-knappen intryckt vid start och anslut sedan USB-kabeln."
+    "qdlInstructionsButton": "Håll EDL-knappen intryckt vid start och anslut sedan USB-kabeln.",
+    "targetLabel": "Skriv till",
+    "targetDisk": "Disk eller kort",
+    "targetBoard": "Rockchip-kort",
+    "rockusbNotFound": "Inget Rockchip-kort hittades. Anslut kortet via USB i Maskrom- eller Loader-läge.",
+    "rockusbInstructions": "Håll in Maskrom- eller Recovery-knappen, anslut kortets USB OTG-port till den här datorn och släpp sedan knappen."
   },
   "header": {
     "stepManufacturer": "Tillverkare",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Öppna ett issue på GitHub",
     "logsStepPaste": "Klistra in länken och beskriv problemet",
     "logsCaption": "Armbian-loggar",
-    "openInBrowser": "Öppna i webbläsaren"
+    "openInBrowser": "Öppna i webbläsaren",
+    "boardDevicesTitle": "Kunde inte söka efter Rockchip-kort",
+    "boardDevicesHint": "Anslut kortet via USB igen och försök på nytt."
   },
   "error": {
     "downloadFailed": "Nedladdningen misslyckades",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Enheten gick inte att läsa tillbaka för att verifiera skrivningen. Anslut den igen och försök på nytt, eller prova ett annat kort eller en annan läsare.",
     "imageDecompressFailed": "Avbildningen gick inte att packa upp. Filen kan vara skadad eller ofullständig. Ladda ner den igen eller välj en annan fil.",
     "imageInvalid": "Avbildningsfilen är tom eller oanvändbar. Välj den igen eller ladda ner en ny kopia.",
-    "flashBusy": "Den förra flashningen håller fortfarande på att avslutas. Vänta en stund och försök igen."
+    "flashBusy": "Den förra flashningen håller fortfarande på att avslutas. Vänta en stund och försök igen.",
+    "rockusbDeviceNotFound": "Det valda kortet är inte längre anslutet. Anslut det igen i Maskrom- eller Loader-läge och välj det på nytt.",
+    "rockusbMultipleDevices": "Det finns mer än ett Rockchip-kort på den här USB-porten. Anslut bara kortet du vill flasha.",
+    "rockusbPermissionDenied": "USB-åtkomst till kortet nekades. Stäng andra flashverktyg som RKDevTool eller rkdeveloptool och försök igen.",
+    "rockusbPermissionDeniedLinux": "USB-åtkomst nekad. Installera en udev-regel och anslut sedan kortet igen: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "Kortets USB-drivrutin kan inte användas. I Windows byter du ut den mot WinUSB-drivrutinen med Zadig (zadig.akeo.ie) och ansluter sedan kortet igen.",
+    "rockusbConnectionFailed": "Kunde inte ansluta till kortet. Anslut det igen i Maskrom- eller Loader-läge och försök på nytt.",
+    "rockusbDisconnected": "Kortet kopplades bort under flashningen. Anslut det igen i Maskrom-läge och försök på nytt.",
+    "rockusbTimeout": "Kortet slutade svara. Anslut det igen i Maskrom-läge och försök på nytt.",
+    "rockusbUnsupportedSoc": "Den här versionen av Armbian Imager har ingen Maskrom-laddare för kortets krets. Starta kortet i Loader-läge eller skriv till en disk eller ett minneskort i stället.",
+    "rockusbSocMismatch": "Den här avbilden är för en annan krets än det anslutna kortet. Välj avbilden för ditt kort.",
+    "rockusbLoaderUnavailable": "Kunde inte ladda ner kortets laddare. Kontrollera internetanslutningen och försök igen.",
+    "rockusbLoaderFailed": "Kortet tog inte emot laddaren. Stäng av det, gå in i Maskrom-läge igen och försök på nytt.",
+    "rockusbNoLoaderMode": "Laddaren skickades, men kortet dök inte upp igen via USB. Stäng av det, gå in i Maskrom-läge igen och försök på nytt.",
+    "rockusbStorageUnavailable": "Kortet saknar den valda lagringen, eller så når dess laddare den inte. Välj en annan lagring och försök igen."
   },
   "custom": {
     "customImage": "Egen avbildning",

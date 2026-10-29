@@ -71,6 +71,15 @@
         "timezone": "Fuso horário",
         "keys": "Chaves SSH"
       }
+    },
+    "boardConnecting": "A ligar à placa...",
+    "boardLoader": "A iniciar o loader da placa...",
+    "boardStorage": {
+      "rowLabel": "Armazenamento da placa",
+      "emmc": "eMMC",
+      "sd": "Cartão SD",
+      "spinor": "Flash SPI NOR",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Bloqueado",
     "qdlNotFound": "Nenhum dispositivo EDL encontrado. Coloque a placa em modo EDL e ligue por USB.",
     "qdlInstructions": "Coloque o jumper nos pinos JCTL e ligue o cabo USB-C.",
-    "qdlInstructionsButton": "Mantém o botão EDL premido ao ligar e liga o cabo USB."
+    "qdlInstructionsButton": "Mantém o botão EDL premido ao ligar e liga o cabo USB.",
+    "targetLabel": "Gravar em",
+    "targetDisk": "Disco ou cartão",
+    "targetBoard": "Placa Rockchip",
+    "rockusbNotFound": "Nenhuma placa Rockchip encontrada. Ligue a placa por USB em modo Maskrom ou Loader.",
+    "rockusbInstructions": "Mantenha premido o botão Maskrom ou Recovery, ligue a porta USB OTG da placa a este computador e depois solte o botão."
   },
   "header": {
     "stepManufacturer": "Fabricante",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Abra uma issue no GitHub",
     "logsStepPaste": "Cole o link e descreva o problema",
     "logsCaption": "Registos do Armbian",
-    "openInBrowser": "Abrir no navegador"
+    "openInBrowser": "Abrir no navegador",
+    "boardDevicesTitle": "Não foi possível procurar placas Rockchip",
+    "boardDevicesHint": "Volte a ligar a placa por USB e tente novamente."
   },
   "error": {
     "downloadFailed": "Falha na transferência",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Não foi possível reler o dispositivo para verificar a gravação. Volte a ligá-lo e tente novamente, ou experimente outro cartão ou leitor.",
     "imageDecompressFailed": "Não foi possível descomprimir a imagem. O ficheiro pode estar danificado ou incompleto. Transfira-o novamente ou escolha outro ficheiro.",
     "imageInvalid": "O ficheiro de imagem está vazio ou não pode ser utilizado. Escolha-o novamente ou transfira uma cópia nova.",
-    "flashBusy": "A gravação anterior ainda está a terminar. Aguarde um momento e tente novamente."
+    "flashBusy": "A gravação anterior ainda está a terminar. Aguarde um momento e tente novamente.",
+    "rockusbDeviceNotFound": "A placa selecionada já não está ligada. Volte a ligá-la em modo Maskrom ou Loader e selecione-a novamente.",
+    "rockusbMultipleDevices": "Há mais do que uma placa Rockchip nesta porta USB. Ligue apenas a placa que pretende gravar.",
+    "rockusbPermissionDenied": "O acesso USB à placa foi negado. Feche outras ferramentas de gravação, como o RKDevTool ou o rkdeveloptool, e tente novamente.",
+    "rockusbPermissionDeniedLinux": "Acesso USB negado. Instale uma regra udev e volte a ligar a placa: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "Não é possível usar o controlador USB da placa. No Windows, substitua-o pelo controlador WinUSB com o Zadig (zadig.akeo.ie) e volte a ligar a placa.",
+    "rockusbConnectionFailed": "Não foi possível ligar à placa. Volte a ligá-la em modo Maskrom ou Loader e tente novamente.",
+    "rockusbDisconnected": "A placa desligou-se durante a gravação. Volte a ligá-la em modo Maskrom e tente novamente.",
+    "rockusbTimeout": "A placa deixou de responder. Volte a ligá-la em modo Maskrom e tente novamente.",
+    "rockusbUnsupportedSoc": "Esta versão do Armbian Imager não tem um loader Maskrom para o chip desta placa. Inicie a placa em modo Loader ou grave um disco ou cartão.",
+    "rockusbSocMismatch": "Esta imagem destina-se a um chip diferente do da placa ligada. Escolha a imagem feita para a sua placa.",
+    "rockusbLoaderUnavailable": "Não foi possível transferir o loader da placa. Verifique a ligação à internet e tente novamente.",
+    "rockusbLoaderFailed": "A placa não aceitou o loader. Desligue-a, entre novamente em modo Maskrom e tente outra vez.",
+    "rockusbNoLoaderMode": "O loader foi enviado, mas a placa não voltou a aparecer por USB. Desligue-a, entre novamente em modo Maskrom e tente outra vez.",
+    "rockusbStorageUnavailable": "A placa não tem o armazenamento escolhido ou o loader não lhe consegue aceder. Escolha outro armazenamento e tente novamente."
   },
   "custom": {
     "customImage": "Imagem personalizada",

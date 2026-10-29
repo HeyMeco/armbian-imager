@@ -71,6 +71,15 @@
         "timezone": "Временска зона",
         "keys": "SSH кључеви"
       }
+    },
+    "boardConnecting": "Повезивање са плочом...",
+    "boardLoader": "Покретање учитавача плоче...",
+    "boardStorage": {
+      "rowLabel": "Меморија плоче",
+      "emmc": "eMMC",
+      "sd": "SD картица",
+      "spinor": "SPI NOR флеш",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Закључано",
     "qdlNotFound": "Није пронађен ниједан EDL уређај. Ставите плочу у EDL режим и повежите преко USB-а.",
     "qdlInstructions": "Ставите кратконос на JCTL пинове, затим повежите USB-C кабл.",
-    "qdlInstructionsButton": "Држите EDL дугме при укључивању, затим повежите USB кабл."
+    "qdlInstructionsButton": "Држите EDL дугме при укључивању, затим повежите USB кабл.",
+    "targetLabel": "Упиши на",
+    "targetDisk": "Диск или картица",
+    "targetBoard": "Rockchip плоча",
+    "rockusbNotFound": "Није пронађена ниједна Rockchip плоча. Повежите плочу преко USB-а у Maskrom или Loader режиму.",
+    "rockusbInstructions": "Држите дугме Maskrom или Recovery, прикључите USB OTG порт плоче на овај рачунар, па пустите дугме."
   },
   "header": {
     "stepManufacturer": "Произвођач",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Отворите issue на GitHub-у",
     "logsStepPaste": "Налепите везу и опишите проблем",
     "logsCaption": "Armbian записи",
-    "openInBrowser": "Отвори у прегледачу"
+    "openInBrowser": "Отвори у прегледачу",
+    "boardDevicesTitle": "Није могуће потражити Rockchip плоче",
+    "boardDevicesHint": "Поново повежите плочу преко USB-а и покушајте поново."
   },
   "error": {
     "downloadFailed": "Преузимање није успело",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Уређај није могао да се прочита назад ради провере уписа. Поново га повежите и покушајте опет, или пробајте другу картицу или читач.",
     "imageDecompressFailed": "Слика није могла да се распакује. Датотека је можда оштећена или непотпуна. Поново је преузмите или изаберите другу датотеку.",
     "imageInvalid": "Датотека слике је празна или неупотребљива. Изаберите је поново или преузмите нову копију.",
-    "flashBusy": "Претходно уписивање се још завршава. Сачекајте тренутак и покушајте поново."
+    "flashBusy": "Претходно уписивање се још завршава. Сачекајте тренутак и покушајте поново.",
+    "rockusbDeviceNotFound": "Изабрана плоча више није повезана. Поново је повежите у Maskrom или Loader режиму и поново је изаберите.",
+    "rockusbMultipleDevices": "На овом USB порту има више од једне Rockchip плоче. Повежите само плочу коју желите да упишете.",
+    "rockusbPermissionDenied": "USB приступ плочи је одбијен. Затворите друге алате за уписивање као што су RKDevTool или rkdeveloptool и покушајте поново.",
+    "rockusbPermissionDeniedLinux": "USB приступ је одбијен. Инсталирајте udev правило, па поново повежите плочу: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "USB драјвер плоче не може да се користи. На Windows-у га замените WinUSB драјвером помоћу Zadig-а (zadig.akeo.ie), па поново повежите плочу.",
+    "rockusbConnectionFailed": "Повезивање са плочом није успело. Поново је повежите у Maskrom или Loader режиму и покушајте поново.",
+    "rockusbDisconnected": "Плоча је искључена током уписивања. Поново је повежите у Maskrom режиму и покушајте поново.",
+    "rockusbTimeout": "Плоча више не одговара. Поново је повежите у Maskrom режиму и покушајте поново.",
+    "rockusbUnsupportedSoc": "Ова верзија Armbian Imager-а нема Maskrom учитавач за чип ове плоче. Покрените плочу у Loader режиму или уместо тога упишите диск или картицу.",
+    "rockusbSocMismatch": "Ова слика је за други чип од повезане плоче. Изаберите слику направљену за вашу плочу.",
+    "rockusbLoaderUnavailable": "Преузимање учитавача плоче није успело. Проверите интернет везу и покушајте поново.",
+    "rockusbLoaderFailed": "Плоча није прихватила учитавач. Искључите је, поново уђите у Maskrom режим и покушајте поново.",
+    "rockusbNoLoaderMode": "Учитавач је послат, али се плоча није поново појавила преко USB-а. Искључите је, поново уђите у Maskrom режим и покушајте поново.",
+    "rockusbStorageUnavailable": "Плоча нема изабрану меморију или јој њен учитавач не може приступити. Изаберите другу меморију и покушајте поново."
   },
   "custom": {
     "customImage": "Прилагођена слика",

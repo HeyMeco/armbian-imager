@@ -7,8 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { getCachedBoardImage } from '../../hooks/useTauri';
 import { IMAGE_VARIANT } from '../../config';
 import { isDetectedBoard, formatImageIdentity, formatKernelLabel } from '../../utils';
-import type { BoardInfo, ImageInfo, BlockDevice, Manufacturer } from '../../types';
-import { deriveFlashMethod, isEdlImage } from '../../types';
+import type { BoardInfo, ImageInfo, BlockDevice, Manufacturer, FlashMethod, FlashTarget, BoardStorage } from '../../types';
+import { BOARD_STORAGE, FLASH_METHOD, FLASH_TARGET, deriveFlashMethod, isBoardMethod, isRockchipSoc, resolveFlashMethod } from '../../types';
 import { MarqueeText, MotdTip, BoardImage, UpdateEntry } from '../shared';
 import { ManufacturerPanel } from './ManufacturerPanel';
 import { BoardPanel } from './BoardPanel';
@@ -38,6 +38,12 @@ interface HomePageProps {
   onConfirmDevice: () => void;
   /** Cancel the inline storage summary (back to the device list). */
   onClearDevice: () => void;
+  /** Disk/card or Rockchip board over USB; only offered for block images of Rockchip boards and custom files. */
+  flashTarget?: FlashTarget;
+  onFlashTargetChange?: (target: FlashTarget) => void;
+  /** Storage on the board a board flash writes to. */
+  boardStorage?: BoardStorage;
+  onBoardStorageChange?: (storage: BoardStorage) => void;
   /** Opens Settings > About, where the update is detailed */
   onOpenUpdate: () => void;
   isOnline?: boolean;
@@ -109,12 +115,12 @@ function osMeta(image: ImageInfo, t: (key: string) => string): ReactNode {
   return formatImageIdentity(image, t).meta;
 }
 
-/** Last step is a USB "device" (icon + wording) for EDL/QDL images, a "storage" drive otherwise. */
+/** Last step is a USB "device" (icon + wording) for EDL/QDL images and Rockchip boards, a "storage" drive otherwise. */
 function deviceStepMeta(
-  image: ImageInfo | null,
+  method: FlashMethod | undefined,
   t: (key: string) => string
 ): { icon: ComponentType<{ size?: number }>; label: string; cta: string } {
-  return image && isEdlImage(image)
+  return isBoardMethod(method)
     ? { icon: Usb, label: t('home.device'), cta: t('home.chooseDevice') }
     : { icon: HardDrive, label: t('home.storage'), cta: t('home.chooseStorage') };
 }
@@ -226,6 +232,10 @@ export function HomePage({
   onSelectDevice,
   onConfirmDevice,
   onClearDevice,
+  flashTarget = FLASH_TARGET.DISK,
+  onFlashTargetChange,
+  boardStorage = BOARD_STORAGE.EMMC,
+  onBoardStorageChange,
   onOpenUpdate,
   isOnline = true,
   entering = false,
@@ -258,7 +268,13 @@ export function HomePage({
     <MarqueeText text={selectedDevice.model || selectedDevice.name} className="val-text" />
   ) : undefined;
   const deviceMeta = selectedDevice ? selectedDevice.size_formatted : null;
-  const dStep = deviceStepMeta(selectedImage, t);
+  const flashMethod = selectedImage ? resolveFlashMethod(selectedImage, flashTarget) : undefined;
+  const dStep = deviceStepMeta(flashMethod, t);
+  // Any block image can go straight to a Rockchip board; a custom file with no known board might be for one.
+  const boardFlashAvailable =
+    !!selectedImage &&
+    deriveFlashMethod(selectedImage) === FLASH_METHOD.BLOCK &&
+    (isRockchipSoc(selectedBoard?.soc) || (!!isCustomImage && !hasDetectedBoard));
 
   // Upstream selections shown in the inline storage confirm summary.
   const deviceSummary = [
@@ -274,7 +290,14 @@ export function HomePage({
   // Inline storage panel; it picks list vs. confirm view from `selectedDevice`.
   const renderDevicePanel = () => (
     <DevicePanel
-      flashMethod={selectedImage ? deriveFlashMethod(selectedImage) : undefined}
+      // A fresh list per target: disks must never show, even briefly, under the board switch.
+      key={flashTarget}
+      flashMethod={flashMethod}
+      boardFlashAvailable={boardFlashAvailable && !!onFlashTargetChange}
+      flashTarget={flashTarget}
+      onFlashTargetChange={onFlashTargetChange}
+      boardStorage={boardStorage}
+      onBoardStorageChange={onBoardStorageChange}
       edlEntry={selectedBoard?.qdl?.edl_entry ?? null}
       summary={deviceSummary}
       boardImage={boardImage}

@@ -2207,6 +2207,11 @@
   border-top: 1px solid var(--border-light);
 }
 
+/* Board storage picker sits where the target's size would be */
+.device-summary__boardstorage .set-select {
+  flex: none;
+}
+
 .device-summary__profilerow {
   display: flex;
   align-items: center;

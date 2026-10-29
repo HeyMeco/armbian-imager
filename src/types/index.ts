@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
-import { QDL_STAGE, type FLASH_PREP_STAGE } from '../config/constants';
+import { BOARD_STAGE, QDL_STAGE, type FLASH_PREP_STAGE } from '../config/constants';
 
 export interface BoardInfo {
   slug: string;
@@ -90,11 +90,13 @@ export function isUfsImage(image: Pick<ImageInfo, 'storage'>): boolean {
   return image.storage?.toLowerCase() === IMAGE_STORAGE.UFS;
 }
 
-/** How an image is written: raw block (dd), QDL TAR (Firehose rawprogram), or QDL UFS (raw Firehose write). */
+/** How an image is written: raw block (dd), QDL TAR (Firehose rawprogram), QDL UFS (raw Firehose write),
+ *  or rockusb (LBA writes to a Rockchip board's storage over USB). */
 export const FLASH_METHOD = {
   BLOCK: 'block',
   QDL: 'qdl',
   QDL_UFS: 'qdl-ufs',
+  ROCKUSB: 'rockusb',
 } as const;
 
 export type FlashMethod = (typeof FLASH_METHOD)[keyof typeof FLASH_METHOD];
@@ -109,7 +111,52 @@ export function deriveFlashMethod(image: Pick<ImageInfo, 'format' | 'storage'>):
 
 /** A flash method targets a Qualcomm EDL device (QDL TAR or raw UFS) rather than a block device. */
 export function isEdlMethod(method: FlashMethod | null | undefined): boolean {
+  return method === FLASH_METHOD.QDL || method === FLASH_METHOD.QDL_UFS;
+}
+
+/** A flash method writes a board over USB (EDL or rockusb), not a disk the OS mounts. */
+export function isBoardMethod(method: FlashMethod | null | undefined): boolean {
   return !!method && method !== FLASH_METHOD.BLOCK;
+}
+
+/** Where the user chose to write a block image: a disk/card, or a Rockchip board over USB. */
+export const FLASH_TARGET = {
+  DISK: 'disk',
+  BOARD: 'board',
+} as const;
+
+export type FlashTarget = (typeof FLASH_TARGET)[keyof typeof FLASH_TARGET];
+
+/** Storage on a Rockchip board a rockusb flash writes to; twin of rockchip::BoardStorage in Rust. */
+export const BOARD_STORAGE = {
+  EMMC: 'emmc',
+  SD: 'sd',
+  SPINOR: 'spinor',
+  UFS: 'ufs',
+} as const;
+
+export type BoardStorage = (typeof BOARD_STORAGE)[keyof typeof BOARD_STORAGE];
+
+/** The write path once the target is chosen: the image decides EDL, the user's target decides disk vs board. */
+export function resolveFlashMethod(
+  image: Pick<ImageInfo, 'format' | 'storage'>,
+  target: FlashTarget
+): FlashMethod {
+  const method = deriveFlashMethod(image);
+  return method === FLASH_METHOD.BLOCK && target === FLASH_TARGET.BOARD ? FLASH_METHOD.ROCKUSB : method;
+}
+
+/** Which device list a flash method picks its target from. */
+export type TargetBus = 'block' | 'edl' | 'rockusb';
+
+export function targetBus(method: FlashMethod | null | undefined): TargetBus {
+  if (method === FLASH_METHOD.ROCKUSB) return 'rockusb';
+  return isEdlMethod(method) ? 'edl' : 'block';
+}
+
+/** A board SoC string names a Rockchip chip ("RK3588", "rk3566", "PX30", "RV1106"). */
+export function isRockchipSoc(soc: string | null | undefined): boolean {
+  return !!soc && /^(rockchip\s*)?(rk|rv|px)\d/i.test(soc.trim());
 }
 
 /** Whether an image flashes over EDL; the EDL-aware counterpart of a plain block write. */
@@ -180,6 +227,8 @@ export interface FlashProgress {
   partitions_total: number;
   /** Number of partitions programmed so far in QDL mode */
   partitions_written: number;
+  /** Rockchip board flash stage (BOARD_STAGE values); null unless one is running */
+  board_stage: string | null;
   /** Autoconfig work before the write (image copy, then profile injection); null otherwise */
   prep_stage: FlashPrepStage | null;
   /** A flash waits for the previous one to finish; the other fields still describe that one */
@@ -190,7 +239,7 @@ export type FlashPrepStage = (typeof FLASH_PREP_STAGE)[keyof typeof FLASH_PREP_S
 
 /** A freshly reset flash state: nothing prepared, written or verified yet. */
 export function isIdleFlashProgress(prog: FlashProgress): boolean {
-  return !prog.prep_stage && !prog.qdl_stage && !prog.is_verifying && prog.written_bytes === 0;
+  return !prog.prep_stage && !prog.qdl_stage && !prog.board_stage && !prog.is_verifying && prog.written_bytes === 0;
 }
 
 const QDL_PRE_WRITE_STAGES: readonly string[] = [QDL_STAGE.CONNECTING, QDL_STAGE.SAHARA, QDL_STAGE.CONFIGURING];
@@ -198,6 +247,32 @@ const QDL_PRE_WRITE_STAGES: readonly string[] = [QDL_STAGE.CONNECTING, QDL_STAGE
 /** True once a QDL flash has gone past the handshake and may have changed the board's storage. */
 export function isQdlWriteStage(stage: string | null): boolean {
   return !!stage && !QDL_PRE_WRITE_STAGES.includes(stage);
+}
+
+const BOARD_PRE_WRITE_STAGES: readonly string[] = [
+  BOARD_STAGE.CONNECTING, BOARD_STAGE.LOADER, BOARD_STAGE.RECONNECTING, BOARD_STAGE.STORAGE,
+];
+
+/** True once a rockusb flash has started writing and may have changed the board's storage. */
+export function isBoardWriteStage(stage: string | null): boolean {
+  return !!stage && !BOARD_PRE_WRITE_STAGES.includes(stage);
+}
+
+/** Rockchip USB mode, from the board's bcdUSB: the boot ROM, or usbplug / U-Boot rockusb */
+export type RockchipMode = 'maskrom' | 'loader';
+
+/** A Rockchip board connected over USB; mirrors rockchip::RockchipDevice in Rust */
+export interface RockchipDevice {
+  /** Device path (`rockusb://<bus_id>/<port_chain>`) passed back to target this device */
+  path: string;
+  mode: RockchipMode;
+  product_id: number;
+  /** SoC named by the boot ROM PID (Maskrom only); Loader PIDs are shared across SoCs */
+  soc: string | null;
+  /** This build has a loader to bring the board from Maskrom to Loader mode */
+  maskrom_supported: boolean;
+  bus_id: string;
+  port_chain: string;
 }
 
 /** Represents a Qualcomm device in EDL mode detected via USB */

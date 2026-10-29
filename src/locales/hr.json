@@ -71,6 +71,15 @@
         "timezone": "Vremenska zona",
         "keys": "SSH ključevi"
       }
+    },
+    "boardConnecting": "Povezivanje s pločom...",
+    "boardLoader": "Pokretanje loadera ploče...",
+    "boardStorage": {
+      "rowLabel": "Pohrana ploče",
+      "emmc": "eMMC",
+      "sd": "SD kartica",
+      "spinor": "SPI NOR flash",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Zaključano",
     "qdlNotFound": "EDL uređaj nije pronađen. Postavite ploču u EDL način rada i spojite je putem USB-a.",
     "qdlInstructions": "Postavite jumper na JCTL pinove, zatim spojite USB-C kabel.",
-    "qdlInstructionsButton": "Držite tipku EDL pri uključivanju, zatim spojite USB kabel."
+    "qdlInstructionsButton": "Držite tipku EDL pri uključivanju, zatim spojite USB kabel.",
+    "targetLabel": "Zapiši na",
+    "targetDisk": "Disk ili kartica",
+    "targetBoard": "Rockchip ploča",
+    "rockusbNotFound": "Rockchip ploča nije pronađena. Spojite ploču putem USB-a u Maskrom ili Loader načinu rada.",
+    "rockusbInstructions": "Držite tipku Maskrom ili Recovery, spojite USB OTG priključak ploče na ovo računalo, a zatim otpustite tipku."
   },
   "header": {
     "stepManufacturer": "Proizvođač",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Otvorite issue na GitHubu",
     "logsStepPaste": "Zalijepite poveznicu i opišite problem",
     "logsCaption": "Armbian zapisi",
-    "openInBrowser": "Otvori u pregledniku"
+    "openInBrowser": "Otvori u pregledniku",
+    "boardDevicesTitle": "Nije moguće potražiti Rockchip ploče",
+    "boardDevicesHint": "Ponovno spojite ploču putem USB-a i pokušajte ponovno."
   },
   "error": {
     "downloadFailed": "Preuzimanje nije uspjelo",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Uređaj nije bilo moguće ponovno pročitati radi provjere zapisa. Ponovno ga spojite i pokušajte opet ili pokušajte s drugom karticom ili čitačem.",
     "imageDecompressFailed": "Sliku nije bilo moguće raspakirati. Datoteka je možda oštećena ili nepotpuna. Ponovno je preuzmite ili odaberite drugu datoteku.",
     "imageInvalid": "Datoteka slike je prazna ili neupotrebljiva. Odaberite je ponovno ili preuzmite novu kopiju.",
-    "flashBusy": "Prethodno snimanje se još privodi kraju. Pričekajte trenutak i pokušajte ponovno."
+    "flashBusy": "Prethodno snimanje se još privodi kraju. Pričekajte trenutak i pokušajte ponovno.",
+    "rockusbDeviceNotFound": "Odabrana ploča više nije spojena. Ponovno je spojite u Maskrom ili Loader načinu rada i ponovno je odaberite.",
+    "rockusbMultipleDevices": "Na ovom USB priključku je više od jedne Rockchip ploče. Spojite samo ploču koju želite snimiti.",
+    "rockusbPermissionDenied": "USB pristup ploči je odbijen. Zatvorite druge alate za snimanje poput RKDevTool ili rkdeveloptool i pokušajte ponovno.",
+    "rockusbPermissionDeniedLinux": "USB pristup je odbijen. Instalirajte udev pravilo, zatim ponovno spojite ploču: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "USB upravljački program ploče nije moguće koristiti. U sustavu Windows zamijenite ga WinUSB upravljačkim programom pomoću alata Zadig (zadig.akeo.ie), zatim ponovno spojite ploču.",
+    "rockusbConnectionFailed": "Povezivanje s pločom nije uspjelo. Ponovno je spojite u Maskrom ili Loader načinu rada i pokušajte ponovno.",
+    "rockusbDisconnected": "Ploča je odspojena tijekom snimanja. Ponovno je spojite u Maskrom načinu rada i pokušajte ponovno.",
+    "rockusbTimeout": "Ploča više ne odgovara. Ponovno je spojite u Maskrom načinu rada i pokušajte ponovno.",
+    "rockusbUnsupportedSoc": "Ova verzija Armbian Imagera nema Maskrom loader za čip ove ploče. Pokrenite ploču u Loader načinu rada ili umjesto toga snimite disk ili karticu.",
+    "rockusbSocMismatch": "Ova slika je za drugi čip od spojene ploče. Odaberite sliku izrađenu za vašu ploču.",
+    "rockusbLoaderUnavailable": "Preuzimanje loadera ploče nije uspjelo. Provjerite internetsku vezu i pokušajte ponovno.",
+    "rockusbLoaderFailed": "Ploča nije prihvatila loader. Isključite je, ponovno uđite u Maskrom način rada i pokušajte ponovno.",
+    "rockusbNoLoaderMode": "Loader je poslan, ali ploča se nije ponovno pojavila putem USB-a. Isključite je, ponovno uđite u Maskrom način rada i pokušajte ponovno.",
+    "rockusbStorageUnavailable": "Ploča nema odabranu pohranu ili joj njezin loader ne može pristupiti. Odaberite drugu pohranu i pokušajte ponovno."
   },
   "custom": {
     "customImage": "Prilagođena slika",

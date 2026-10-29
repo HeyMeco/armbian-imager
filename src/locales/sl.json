@@ -71,6 +71,15 @@
         "timezone": "Časovni pas",
         "keys": "Ključi SSH"
       }
+    },
+    "boardConnecting": "Povezovanje s ploščo...",
+    "boardLoader": "Zaganjanje nalagalnika plošče...",
+    "boardStorage": {
+      "rowLabel": "Pomnilnik plošče",
+      "emmc": "eMMC",
+      "sd": "Kartica SD",
+      "spinor": "Pomnilnik SPI NOR",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Zaklenjeno",
     "qdlNotFound": "Naprava EDL ni bila najdena. Vključite ploščo v način EDL in jo povežite prek USB.",
     "qdlInstructions": "Namestite mostiček na pine JCTL, nato priključite kabel USB-C.",
-    "qdlInstructionsButton": "Med vklopom držite gumb EDL, nato priključite kabel USB."
+    "qdlInstructionsButton": "Med vklopom držite gumb EDL, nato priključite kabel USB.",
+    "targetLabel": "Zapiši na",
+    "targetDisk": "Disk ali kartica",
+    "targetBoard": "Plošča Rockchip",
+    "rockusbNotFound": "Plošča Rockchip ni bila najdena. Povežite ploščo prek USB v načinu Maskrom ali Loader.",
+    "rockusbInstructions": "Držite gumb Maskrom ali Recovery, priključite vrata USB OTG plošče na ta računalnik in nato spustite gumb."
   },
   "header": {
     "stepManufacturer": "Proizvajalec",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Odprite issue na GitHubu",
     "logsStepPaste": "Prilepite povezavo in opišite težavo",
     "logsCaption": "Dnevniki Armbian",
-    "openInBrowser": "Odpri v brskalniku"
+    "openInBrowser": "Odpri v brskalniku",
+    "boardDevicesTitle": "Plošč Rockchip ni bilo mogoče poiskati",
+    "boardDevicesHint": "Ponovno povežite ploščo prek USB in poskusite znova."
   },
   "error": {
     "downloadFailed": "Prenos ni uspel",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Naprave ni bilo mogoče znova prebrati za preverjanje zapisa. Znova jo povežite in poskusite ponovno ali poskusite z drugo kartico ali čitalnikom.",
     "imageDecompressFailed": "Slike ni bilo mogoče razširiti. Datoteka je morda poškodovana ali nepopolna. Znova jo prenesite ali izberite drugo datoteko.",
     "imageInvalid": "Datoteka slike je prazna ali neuporabna. Izberite jo znova ali prenesite novo kopijo.",
-    "flashBusy": "Prejšnje zapisovanje se še zaključuje. Počakajte trenutek in poskusite znova."
+    "flashBusy": "Prejšnje zapisovanje se še zaključuje. Počakajte trenutek in poskusite znova.",
+    "rockusbDeviceNotFound": "Izbrana plošča ni več povezana. Ponovno jo povežite v načinu Maskrom ali Loader in jo znova izberite.",
+    "rockusbMultipleDevices": "Na teh vratih USB je več kot ena plošča Rockchip. Povežite samo ploščo, ki jo želite zapisati.",
+    "rockusbPermissionDenied": "Dostop USB do plošče je bil zavrnjen. Zaprite druga orodja za zapisovanje, kot sta RKDevTool ali rkdeveloptool, in poskusite znova.",
+    "rockusbPermissionDeniedLinux": "Dostop USB zavrnjen. Namestite pravilo udev in nato ponovno povežite ploščo: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "Gonilnika USB plošče ni mogoče uporabiti. V sistemu Windows ga z orodjem Zadig (zadig.akeo.ie) zamenjajte z gonilnikom WinUSB in nato ponovno povežite ploščo.",
+    "rockusbConnectionFailed": "Povezava s ploščo ni uspela. Ponovno jo povežite v načinu Maskrom ali Loader in poskusite znova.",
+    "rockusbDisconnected": "Plošča se je med zapisovanjem odklopila. Ponovno jo povežite v načinu Maskrom in poskusite znova.",
+    "rockusbTimeout": "Plošča se ne odziva več. Ponovno jo povežite v načinu Maskrom in poskusite znova.",
+    "rockusbUnsupportedSoc": "Ta različica Armbian Imagerja nima nalagalnika Maskrom za čip te plošče. Zaženite ploščo v načinu Loader ali raje zapišite disk ali kartico.",
+    "rockusbSocMismatch": "Ta slika je za drug čip kot povezana plošča. Izberite sliko za svojo ploščo.",
+    "rockusbLoaderUnavailable": "Nalagalnika plošče ni bilo mogoče prenesti. Preverite internetno povezavo in poskusite znova.",
+    "rockusbLoaderFailed": "Plošča ni sprejela nalagalnika. Izklopite jo, znova vstopite v način Maskrom in poskusite znova.",
+    "rockusbNoLoaderMode": "Nalagalnik je bil poslan, vendar se plošča ni znova pojavila prek USB. Izklopite jo, znova vstopite v način Maskrom in poskusite znova.",
+    "rockusbStorageUnavailable": "Plošča nima izbranega pomnilnika ali pa ga njen nalagalnik ne doseže. Izberite drug pomnilnik in poskusite znova."
   },
   "custom": {
     "customImage": "Slika po meri",

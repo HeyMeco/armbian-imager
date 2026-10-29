@@ -14,7 +14,7 @@ import { classifyLoadError, qdlErrorKey, type LoadErrorKind } from '../../utils/
 import { HeroArt } from '../settings/HeroArt';
 import { LogShareModal } from './LogShareModal';
 
-type PanelErrorSource = 'catalog' | 'devices' | 'edl';
+type PanelErrorSource = 'catalog' | 'devices' | 'edl' | 'board';
 
 interface PanelErrorCopy {
   titleKey: string;
@@ -30,10 +30,11 @@ const CATALOG_COPY: Record<LoadErrorKind, PanelErrorCopy> = {
 const DEVICE_COPY: Record<Exclude<PanelErrorSource, 'catalog'>, PanelErrorCopy> = {
   devices: { titleKey: 'errorDisplay.devicesTitle', hintKey: 'errorDisplay.devicesHint' },
   edl: { titleKey: 'errorDisplay.edlDevicesTitle', hintKey: 'errorDisplay.edlDevicesHint' },
+  board: { titleKey: 'errorDisplay.boardDevicesTitle', hintKey: 'errorDisplay.boardDevicesHint' },
 };
 
-// The backend logs the raw failure of every list command except get_qdl_devices.
-const RAW_UNLOGGED: readonly PanelErrorSource[] = ['edl'];
+// The backend logs the raw failure of every list command except get_qdl_devices and get_rockusb_devices.
+const RAW_UNLOGGED: readonly PanelErrorSource[] = ['edl', 'board'];
 
 interface PanelErrorProps {
   error: string;

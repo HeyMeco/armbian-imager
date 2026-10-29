@@ -4,8 +4,8 @@
 import { useState, useEffect, useEffectEvent } from 'react';
 import { Usb, Disc, FileImage, ShieldOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { BoardInfo, ImageInfo, BlockDevice, AutoconfigConfig, FlashExit } from '../../types';
-import { isEdlImage } from '../../types';
+import type { BoardInfo, ImageInfo, BlockDevice, AutoconfigConfig, FlashExit, FlashTarget, BoardStorage } from '../../types';
+import { FLASH_TARGET, isBoardMethod, resolveFlashMethod } from '../../types';
 import { getMonoLogo } from '../../config/mono-logos';
 import { distroBlock } from '../../utils/distroTheme';
 import { formatImageIdentity } from '../../utils';
@@ -25,6 +25,9 @@ interface FlashProgressProps {
   device: BlockDevice;
   /** Opt-in autoconfig profile config to write on first boot; null when none selected. */
   autoconfig?: AutoconfigConfig | null;
+  /** Disk/card or Rockchip board over USB, as picked in the device step. */
+  flashTarget?: FlashTarget;
+  boardStorage?: BoardStorage;
   onComplete: () => void;
   onBack: () => void;
   onSettledChange?: (exit: FlashExit | null) => void;
@@ -35,6 +38,8 @@ export function FlashProgress({
   image,
   device,
   autoconfig,
+  flashTarget = FLASH_TARGET.DISK,
+  boardStorage,
   onComplete,
   onBack,
   onSettledChange,
@@ -55,7 +60,16 @@ export function FlashProgress({
     handleBack,
     handleShaWarningConfirm,
     handleShaWarningCancel,
-  } = useFlashOperation({ image, device, soc: board.soc, boardSlug: board.slug, autoconfig, onBack });
+  } = useFlashOperation({
+    image,
+    device,
+    soc: board.soc,
+    boardSlug: board.slug,
+    autoconfig,
+    flashTarget,
+    boardStorage,
+    onBack,
+  });
 
   useEffect(() => {
     getCachedBoardImage(board.slug)
@@ -87,7 +101,7 @@ export function FlashProgress({
   }, [settled, onSettledChange]);
 
   const isCustomIcon = image.is_custom && board.slug === SLUGS.CUSTOM;
-  const isEdl = isEdlImage(image);
+  const isEdl = isBoardMethod(resolveFlashMethod(image, flashTarget));
 
   // A system disk only reaches this screen once unlocked, so the Lock glyph would mislead.
   const iconType = getDeviceType({ ...device, is_system: false });

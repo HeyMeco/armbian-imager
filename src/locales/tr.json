@@ -71,6 +71,15 @@
         "timezone": "Saat dilimi",
         "keys": "SSH anahtarları"
       }
+    },
+    "boardConnecting": "Karta bağlanılıyor...",
+    "boardLoader": "Kartın yükleyicisi başlatılıyor...",
+    "boardStorage": {
+      "rowLabel": "Kart depolaması",
+      "emmc": "eMMC",
+      "sd": "SD kart",
+      "spinor": "SPI NOR flash",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Kilitli",
     "qdlNotFound": "EDL cihazı bulunamadı. Kartınızı EDL moduna alın ve USB ile bağlayın.",
     "qdlInstructions": "JCTL pinlerine jumper yerleştirin, ardından USB-C kablosunu bağlayın.",
-    "qdlInstructionsButton": "Açılışta EDL düğmesini basılı tutun, ardından USB kablosunu bağlayın."
+    "qdlInstructionsButton": "Açılışta EDL düğmesini basılı tutun, ardından USB kablosunu bağlayın.",
+    "targetLabel": "Yazılacak yer",
+    "targetDisk": "Disk veya kart",
+    "targetBoard": "Rockchip kartı",
+    "rockusbNotFound": "Rockchip kartı bulunamadı. Kartı Maskrom veya Loader modunda USB ile bağlayın.",
+    "rockusbInstructions": "Maskrom veya Recovery düğmesini basılı tutun, kartın USB OTG bağlantı noktasını bu bilgisayara takın, ardından düğmeyi bırakın."
   },
   "header": {
     "stepManufacturer": "Üretici",
@@ -160,7 +174,9 @@
     "logsStepIssue": "GitHub'da bir issue açın",
     "logsStepPaste": "Bağlantıyı yapıştırın ve sorunu anlatın",
     "logsCaption": "Armbian günlükleri",
-    "openInBrowser": "Tarayıcıda aç"
+    "openInBrowser": "Tarayıcıda aç",
+    "boardDevicesTitle": "Rockchip kartları aranamadı",
+    "boardDevicesHint": "Kartı USB ile yeniden bağlayıp tekrar deneyin."
   },
   "error": {
     "downloadFailed": "İndirme başarısız",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Yazma işlemini doğrulamak için cihaz geri okunamadı. Yeniden bağlayıp tekrar deneyin ya da başka bir kart veya okuyucu deneyin.",
     "imageDecompressFailed": "İmaj açılamadı. Dosya bozuk veya eksik olabilir. Yeniden indirin veya başka bir dosya seçin.",
     "imageInvalid": "İmaj dosyası boş veya kullanılamaz durumda. Yeniden seçin veya yeni bir kopya indirin.",
-    "flashBusy": "Önceki yazma işlemi hâlâ tamamlanıyor. Biraz bekleyip tekrar deneyin."
+    "flashBusy": "Önceki yazma işlemi hâlâ tamamlanıyor. Biraz bekleyip tekrar deneyin.",
+    "rockusbDeviceNotFound": "Seçilen kart artık bağlı değil. Kartı Maskrom veya Loader modunda yeniden bağlayıp tekrar seçin.",
+    "rockusbMultipleDevices": "Bu USB bağlantı noktasında birden fazla Rockchip kartı var. Yalnızca yazmak istediğiniz kartı bağlayın.",
+    "rockusbPermissionDenied": "Karta USB erişimi reddedildi. RKDevTool veya rkdeveloptool gibi diğer yazma araçlarını kapatıp tekrar deneyin.",
+    "rockusbPermissionDeniedLinux": "USB erişimi reddedildi. Bir udev kuralı yükleyin, ardından kartı yeniden bağlayın: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "Kartın USB sürücüsü kullanılamıyor. Windows'ta Zadig (zadig.akeo.ie) ile WinUSB sürücüsüyle değiştirin, ardından kartı yeniden bağlayın.",
+    "rockusbConnectionFailed": "Karta bağlanılamadı. Kartı Maskrom veya Loader modunda yeniden bağlayıp tekrar deneyin.",
+    "rockusbDisconnected": "Yazma sırasında kartın bağlantısı kesildi. Kartı Maskrom modunda yeniden bağlayıp tekrar deneyin.",
+    "rockusbTimeout": "Kart yanıt vermiyor. Kartı Maskrom modunda yeniden bağlayıp tekrar deneyin.",
+    "rockusbUnsupportedSoc": "Armbian Imager'ın bu sürümünde bu kartın yongası için Maskrom yükleyicisi yok. Kartı Loader modunda başlatın ya da bunun yerine bir disk veya karta yazın.",
+    "rockusbSocMismatch": "Bu imaj, bağlı karttan farklı bir yonga içindir. Kartınız için hazırlanmış imajı seçin.",
+    "rockusbLoaderUnavailable": "Kartın yükleyicisi indirilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.",
+    "rockusbLoaderFailed": "Kart yükleyiciyi kabul etmedi. Kartı kapatın, yeniden Maskrom moduna girin ve tekrar deneyin.",
+    "rockusbNoLoaderMode": "Yükleyici gönderildi ancak kart USB üzerinden geri gelmedi. Kartı kapatın, yeniden Maskrom moduna girin ve tekrar deneyin.",
+    "rockusbStorageUnavailable": "Kartta seçilen depolama yok veya yükleyicisi ona erişemiyor. Başka bir depolama seçip tekrar deneyin."
   },
   "custom": {
     "customImage": "Özel İmaj",

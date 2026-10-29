@@ -11,6 +11,7 @@ Armbian Imager is the official tool for downloading and flashing Armbian OS imag
 
 - Works with 300+ boards, with filtering and board metadata from armbian.com
 - Disk safety checks, checksum validation, and post-write verification
+- Flash Rockchip boards directly over USB in Maskrom or Loader mode, no card reader needed
 - Native builds for Linux, Windows, and macOS, on x64 and ARM64
 - Multi-language interface that follows your system language by default
 - Built-in application updates
@@ -48,6 +49,18 @@ Prebuilt binaries are available for every supported platform.
 2. **Pick a board.** Boards show real photos and metadata from armbian.com.
 3. **Pick an image.** Desktop or server, a kernel branch, and a stable, nightly, or rolling release build.
 4. **Flash.** The app downloads, decompresses, writes, and verifies for you.
+
+### Flashing a Rockchip board over USB
+
+For Rockchip boards (and custom images), the last step lets you write to the board itself instead of a disk or card. Pick **Rockchip board**, connect the board's USB OTG port in Maskrom mode (hold the Maskrom or Recovery button while plugging it in) or Loader mode, and choose which storage on the board gets the image: eMMC, SD card, SPI NOR flash or UFS.
+
+A board in Maskrom first needs a small DRAM loader. The app downloads it from [armbian/rkbin](https://github.com/armbian/rkbin) on first use, checks it against a SHA-256 pinned in the app, and caches it. Maskrom is supported on RK3588, RK3566/RK3568, RK3576, RK3528, RK3399 and RK3328; a board already in Loader mode works with any Rockchip SoC.
+
+| Platform | One-time setup |
+|----------|----------------|
+| macOS | None |
+| Linux | Allow USB access for your user: `echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="2207", MODE="0666"' \| sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules`, then reconnect the board |
+| Windows | Bind the WinUSB driver to the board with [Zadig](https://zadig.akeo.ie) (Rockchip's own RockUSB driver can't be used), then reconnect the board |
 
 ## Customization
 

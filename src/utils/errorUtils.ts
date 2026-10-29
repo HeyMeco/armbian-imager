@@ -3,7 +3,8 @@
 
 // Parse the backend's tagged error strings (e.g. [SHA_UNAVAILABLE]) and map them to i18n keys
 
-import { formatBytes, getErrorMessage } from './index';
+import { formatBytes, getErrorMessage, uiPlatform } from './index';
+import { PLATFORM } from '../config';
 
 export type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -44,6 +45,24 @@ const QDL_ERROR_KEYS = {
   '[QDL_MULTIPLE_DEVICES]': 'error.qdlMultipleDevices',
 } as const;
 
+/** Twins of rockchip::TAG_ROCKUSB_* in src-tauri/src/rockchip/mod.rs; permission denied is per OS, see rockusbErrorKey */
+const ROCKUSB_ERROR_TAG = '[ROCKUSB_ERROR]';
+const ROCKUSB_PERMISSION_TAG = '[ROCKUSB_PERMISSION_DENIED]';
+const ROCKUSB_ERROR_KEYS = {
+  '[ROCKUSB_DEVICE_NOT_FOUND]': 'error.rockusbDeviceNotFound',
+  '[ROCKUSB_MULTIPLE_DEVICES]': 'error.rockusbMultipleDevices',
+  '[ROCKUSB_DRIVER_MISSING]': 'error.rockusbDriverMissing',
+  '[ROCKUSB_CONNECTION_FAILED]': 'error.rockusbConnectionFailed',
+  '[ROCKUSB_DISCONNECTED]': 'error.rockusbDisconnected',
+  '[ROCKUSB_TIMEOUT]': 'error.rockusbTimeout',
+  '[ROCKUSB_UNSUPPORTED_SOC]': 'error.rockusbUnsupportedSoc',
+  '[ROCKUSB_SOC_MISMATCH]': 'error.rockusbSocMismatch',
+  '[ROCKUSB_LOADER_UNAVAILABLE]': 'error.rockusbLoaderUnavailable',
+  '[ROCKUSB_LOADER_FAILED]': 'error.rockusbLoaderFailed',
+  '[ROCKUSB_NO_LOADER_MODE]': 'error.rockusbNoLoaderMode',
+  '[ROCKUSB_STORAGE_UNAVAILABLE]': 'error.rockusbStorageUnavailable',
+} as const;
+
 function findTaggedKey(error: string, keys: Record<string, string>): string | undefined {
   return Object.entries(keys).find(([tag]) => error.includes(tag))?.[1];
 }
@@ -51,6 +70,11 @@ function findTaggedKey(error: string, keys: Record<string, string>): string | un
 /** Check if a SHA error indicates the SHA file was unavailable (not a mismatch) */
 export function isShaUnavailableError(error: string): boolean {
   return error.includes('[SHA_UNAVAILABLE]');
+}
+
+/** True for any [ROCKUSB_*] failure: the board or its connection, never the image, so it must not count against a cached image */
+export function isRockusbError(error: string): boolean {
+  return error.includes('[ROCKUSB_');
 }
 
 /** True when the backend refused the target device before writing ([DEVICE_*] tags, [FLASH_BUSY]) */
@@ -80,7 +104,18 @@ export function translateFlashError(error: string, t: TFn): string {
   if (write) return t('error.writeFailed', { offset: formatBytes(Number(write[1])) });
   const imageKey = findTaggedKey(error, IMAGE_ERROR_KEYS);
   if (imageKey) return t(imageKey);
+  const rockusbKey = rockusbErrorKey(error);
+  if (rockusbKey) return t(rockusbKey);
+  if (error.includes(ROCKUSB_ERROR_TAG)) return error.replace(`${ROCKUSB_ERROR_TAG} `, '');
   return translateQdlError(error, t);
+}
+
+/** i18n key for a [ROCKUSB_*] tagged error; USB permission problems get the remedy for this OS */
+export function rockusbErrorKey(error: string): string | undefined {
+  if (error.includes(ROCKUSB_PERMISSION_TAG)) {
+    return uiPlatform() === PLATFORM.LINUX ? 'error.rockusbPermissionDeniedLinux' : 'error.rockusbPermissionDenied';
+  }
+  return findTaggedKey(error, ROCKUSB_ERROR_KEYS);
 }
 
 /** i18n key for a [QDL_*] tagged error, or undefined when the message carries no known tag */

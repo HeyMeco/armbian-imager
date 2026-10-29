@@ -71,6 +71,15 @@
         "timezone": "Time zone",
         "keys": "SSH keys"
       }
+    },
+    "boardConnecting": "Connecting to the board...",
+    "boardLoader": "Starting the board's loader...",
+    "boardStorage": {
+      "rowLabel": "Board storage",
+      "emmc": "eMMC",
+      "sd": "SD card",
+      "spinor": "SPI NOR flash",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Locked",
     "qdlNotFound": "No EDL device found. Put your board in EDL mode and connect via USB.",
     "qdlInstructions": "Place the jumper on the JCTL pins, then connect the USB-C cable.",
-    "qdlInstructionsButton": "Hold the EDL button while powering on, then connect the USB cable."
+    "qdlInstructionsButton": "Hold the EDL button while powering on, then connect the USB cable.",
+    "targetLabel": "Write to",
+    "targetDisk": "Disk or card",
+    "targetBoard": "Rockchip board",
+    "rockusbNotFound": "No Rockchip board found. Connect the board over USB in Maskrom or Loader mode.",
+    "rockusbInstructions": "Hold the Maskrom or Recovery button, plug the board's USB OTG port into this computer, then release the button."
   },
   "header": {
     "stepManufacturer": "Manufacturer",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Open an issue on GitHub",
     "logsStepPaste": "Paste the link and describe the problem",
     "logsCaption": "Armbian logs",
-    "openInBrowser": "Open in browser"
+    "openInBrowser": "Open in browser",
+    "boardDevicesTitle": "Couldn't look for Rockchip boards",
+    "boardDevicesHint": "Reconnect the board over USB, then try again."
   },
   "error": {
     "downloadFailed": "Download failed",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "The device couldn't be read back to verify the write. Reconnect it and try again, or try another card or reader.",
     "imageDecompressFailed": "The image couldn't be decompressed. The file may be damaged or incomplete. Download it again or pick another file.",
     "imageInvalid": "The image file is empty or unusable. Pick it again or download a fresh copy.",
-    "flashBusy": "The previous flash is still finishing. Wait a moment and try again."
+    "flashBusy": "The previous flash is still finishing. Wait a moment and try again.",
+    "rockusbDeviceNotFound": "The selected board is no longer connected. Reconnect it in Maskrom or Loader mode and select it again.",
+    "rockusbMultipleDevices": "More than one Rockchip board is on this USB port. Connect only the board you want to flash.",
+    "rockusbPermissionDenied": "USB access to the board was denied. Close other flashing tools such as RKDevTool or rkdeveloptool, then try again.",
+    "rockusbPermissionDeniedLinux": "USB access denied. Install a udev rule, then reconnect the board: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "The board's USB driver can't be used. On Windows, replace it with the WinUSB driver using Zadig (zadig.akeo.ie), then reconnect the board.",
+    "rockusbConnectionFailed": "Couldn't connect to the board. Reconnect it in Maskrom or Loader mode and try again.",
+    "rockusbDisconnected": "The board disconnected during the flash. Reconnect it in Maskrom mode and retry.",
+    "rockusbTimeout": "The board stopped responding. Reconnect it in Maskrom mode and retry.",
+    "rockusbUnsupportedSoc": "This version of Armbian Imager has no Maskrom loader for this board's chip. Start the board in Loader mode, or write a disk or card instead.",
+    "rockusbSocMismatch": "This image is for a different chip than the connected board. Pick the image made for your board.",
+    "rockusbLoaderUnavailable": "Couldn't download the board's loader. Check your internet connection and try again.",
+    "rockusbLoaderFailed": "The board didn't accept the loader. Power it off, enter Maskrom mode again and retry.",
+    "rockusbNoLoaderMode": "The loader was sent, but the board didn't come back over USB. Power it off, enter Maskrom mode again and retry.",
+    "rockusbStorageUnavailable": "The board doesn't have the selected storage, or its loader can't reach it. Pick another storage and retry."
   },
   "custom": {
     "customImage": "Custom Image",

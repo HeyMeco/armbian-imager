@@ -15,6 +15,7 @@ import {
   Layers,
   FolderOpen,
   FileCog,
+  Usb,
 } from 'lucide-react';
 import { UI, FLASH_PREP_STAGE } from '../../config';
 
@@ -27,6 +28,8 @@ export type FlashStage =
   | typeof FLASH_PREP_STAGE.APPLYING_PROFILE
   | 'qdl_sahara'
   | 'qdl_firehose'
+  | 'board_connecting'
+  | 'board_loader'
   | 'flashing'
   | 'verifying'
   | 'complete'
@@ -56,6 +59,10 @@ export function FlashStageIcon({ stage, size = UI.ICON_SIZE.FLASH_STAGE }: Flash
       return <Cpu size={size} className="stage-icon flashing" />;
     case 'qdl_firehose':
       return <Layers size={size} className="stage-icon flashing" />;
+    case 'board_connecting':
+      return <Usb size={size} className="stage-icon flashing" />;
+    case 'board_loader':
+      return <Cpu size={size} className="stage-icon flashing" />;
     case 'flashing':
       return <HardDrive size={size} className="stage-icon flashing" />;
     case 'verifying':
@@ -88,6 +95,10 @@ export function getStageKey(stage: FlashStage): string {
       return 'flash.qdlSahara';
     case 'qdl_firehose':
       return 'flash.qdlFirehose';
+    case 'board_connecting':
+      return 'flash.boardConnecting';
+    case 'board_loader':
+      return 'flash.boardLoader';
     case 'flashing':
       return 'flash.writing';
     case 'verifying':
@@ -121,6 +132,8 @@ export function stagePhase(stage: FlashStage): FlashPhase | null {
       return 'prepare';
     case 'qdl_sahara':
     case 'qdl_firehose':
+    case 'board_connecting':
+    case 'board_loader':
     case 'flashing':
       return 'write';
     case 'verifying':
@@ -136,6 +149,7 @@ export function stagePhase(stage: FlashStage): FlashPhase | null {
 /** Stages shown with an indeterminate (breathing) bar instead of a percentage. */
 const INDETERMINATE_STAGES: FlashStage[] = [
   'decompressing', 'verifying_sha', 'extracting', FLASH_PREP_STAGE.APPLYING_PROFILE, 'qdl_sahara',
+  'board_connecting', 'board_loader',
 ];
 
 /** True when a stage has no meaningful percentage and uses the indeterminate bar. */

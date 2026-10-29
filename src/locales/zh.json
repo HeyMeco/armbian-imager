@@ -71,6 +71,15 @@
         "timezone": "时区",
         "keys": "SSH 密钥"
       }
+    },
+    "boardConnecting": "正在连接开发板...",
+    "boardLoader": "正在启动开发板的引导程序...",
+    "boardStorage": {
+      "rowLabel": "开发板存储",
+      "emmc": "eMMC",
+      "sd": "SD 卡",
+      "spinor": "SPI NOR 闪存",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "已锁定",
     "qdlNotFound": "未找到 EDL 设备。请将开发板切换到 EDL 模式，并通过 USB 连接。",
     "qdlInstructions": "在 JCTL 引脚上装好跳线帽，然后接入 USB-C 数据线。",
-    "qdlInstructionsButton": "开机时按住 EDL 按钮，然后接入 USB 数据线。"
+    "qdlInstructionsButton": "开机时按住 EDL 按钮，然后接入 USB 数据线。",
+    "targetLabel": "写入到",
+    "targetDisk": "磁盘或存储卡",
+    "targetBoard": "Rockchip 开发板",
+    "rockusbNotFound": "未找到 Rockchip 开发板。请在 Maskrom 或 Loader 模式下通过 USB 连接开发板。",
+    "rockusbInstructions": "按住 Maskrom 或 Recovery 按键，将开发板的 USB OTG 接口连接到这台电脑，然后松开按键。"
   },
   "header": {
     "stepManufacturer": "制造商",
@@ -160,7 +174,9 @@
     "logsStepIssue": "在 GitHub 上提交 issue",
     "logsStepPaste": "粘贴链接并描述问题",
     "logsCaption": "Armbian 日志",
-    "openInBrowser": "在浏览器中打开"
+    "openInBrowser": "在浏览器中打开",
+    "boardDevicesTitle": "无法搜索 Rockchip 开发板",
+    "boardDevicesHint": "请通过 USB 重新连接开发板，然后重试。"
   },
   "error": {
     "downloadFailed": "下载失败",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "无法回读设备以校验写入结果。请重新连接后重试，或更换卡或读卡器。",
     "imageDecompressFailed": "无法解压镜像。文件可能已损坏或不完整。请重新下载或选择其他文件。",
     "imageInvalid": "镜像文件为空或无法使用。请重新选择或下载新的副本。",
-    "flashBusy": "上一次烧录仍在收尾。请稍等片刻后重试。"
+    "flashBusy": "上一次烧录仍在收尾。请稍等片刻后重试。",
+    "rockusbDeviceNotFound": "所选开发板已断开。请在 Maskrom 或 Loader 模式下重新连接并再次选择。",
+    "rockusbMultipleDevices": "此 USB 接口上有多块 Rockchip 开发板。请只连接要烧录的开发板。",
+    "rockusbPermissionDenied": "开发板的 USB 访问被拒绝。请关闭 RKDevTool 或 rkdeveloptool 等其他烧录工具后重试。",
+    "rockusbPermissionDeniedLinux": "USB 访问被拒绝。请安装 udev 规则，然后重新连接开发板： echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "无法使用开发板的 USB 驱动。在 Windows 上，请使用 Zadig（zadig.akeo.ie）将其替换为 WinUSB 驱动，然后重新连接开发板。",
+    "rockusbConnectionFailed": "无法连接到开发板。请在 Maskrom 或 Loader 模式下重新连接后重试。",
+    "rockusbDisconnected": "烧录过程中开发板断开连接。请在 Maskrom 模式下重新连接后重试。",
+    "rockusbTimeout": "开发板停止响应。请在 Maskrom 模式下重新连接后重试。",
+    "rockusbUnsupportedSoc": "此版本的 Armbian Imager 没有适用于该开发板芯片的 Maskrom 引导程序。请以 Loader 模式启动开发板，或改为写入磁盘或存储卡。",
+    "rockusbSocMismatch": "此镜像适用于与所连接开发板不同的芯片。请选择为您的开发板制作的镜像。",
+    "rockusbLoaderUnavailable": "无法下载开发板的引导程序。请检查网络连接后重试。",
+    "rockusbLoaderFailed": "开发板未接受引导程序。请断电，重新进入 Maskrom 模式后重试。",
+    "rockusbNoLoaderMode": "引导程序已发送，但开发板未通过 USB 重新出现。请断电，重新进入 Maskrom 模式后重试。",
+    "rockusbStorageUnavailable": "开发板没有所选的存储，或其引导程序无法访问。请选择其他存储后重试。"
   },
   "custom": {
     "customImage": "自定义镜像",

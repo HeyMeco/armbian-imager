@@ -253,6 +253,7 @@ armbian-imager/
 │   │   │   ├── scraping.rs          # get_cached_board_image, get_cached_vendor_logo
 │   │   │   ├── settings.rs          # 25+ get/set commands (theme, cache, etc.)
 │   │   │   ├── system.rs            # open_url, locale, frontend logging, armbian detect
+│   │   │   ├── rockusb_operations.rs # get_rockusb_devices, flash_rockusb_image
 │   │   │   ├── update.rs            # get_github_release, is_app_in_applications
 │   │   │   └── state.rs             # AppState (cached JSON, download/flash state)
 │   │   │
@@ -272,6 +273,12 @@ armbian-imager/
 │   │   │   │   ├── authorization.rs # Security.framework + Touch ID
 │   │   │   │   └── bindings.rs      # FFI bindings
 │   │   │   └── windows.rs           # Win32 volume lock + DeviceIoControl
+│   │   │
+│   │   ├── rockchip/                # Rockchip boards over USB (rockusb crate, nusb transport)
+│   │   │   ├── detect.rs            # VID 0x2207 scan, Maskrom/Loader from bcdUSB, port-keyed paths
+│   │   │   ├── socs.rs              # Maskrom PID -> SoC table with pinned rkbin loaders
+│   │   │   ├── loader.rs            # Loader download (pinned commit + SHA-256), 0x471/0x472 parsing
+│   │   │   └── flash.rs             # Maskrom upload, storage switch, LBA write, read-back verify, reset
 │   │   │
 │   │   ├── images/                  # API data parsing
 │   │   │   ├── models.rs            # BoardInfo, ImageInfo structs

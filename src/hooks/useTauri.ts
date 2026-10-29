@@ -2,8 +2,8 @@
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
 import { invoke } from '@tauri-apps/api/core';
-import { qdlToBlockDevice, isDeviceConnected } from '../utils/deviceUtils';
-import type { BoardInfo, ImageInfo, BlockDevice, DownloadProgress, FlashProgress, CustomImageInfo, CustomImageClassification, ArmbianReleaseInfo, CachedImageInfo, CacheBreakdown, QdlDevice, VendorInfo, AutoconfigConfig, DevScenario, DevScenariosStatus, DevTestImage, SshKeyLookup, SshKeySource } from '../types';
+import { qdlToBlockDevice, rockusbToBlockDevice, isDeviceConnected } from '../utils/deviceUtils';
+import type { BoardInfo, ImageInfo, BlockDevice, DownloadProgress, FlashProgress, CustomImageInfo, CustomImageClassification, ArmbianReleaseInfo, CachedImageInfo, CacheBreakdown, QdlDevice, RockchipDevice, BoardStorage, TargetBus, VendorInfo, AutoconfigConfig, DevScenario, DevScenariosStatus, DevTestImage, SshKeyLookup, SshKeySource } from '../types';
 
 export async function getBoards(): Promise<BoardInfo[]> {
   return invoke('get_boards');
@@ -249,23 +249,22 @@ export async function getQdlDevices(): Promise<QdlDevice[]> {
   return invoke('get_qdl_devices');
 }
 
-/** Flash targets for the current write path: QDL (EDL) devices mapped onto BlockDevice, else block devices. */
-export async function getTargetDevices(edl: boolean): Promise<BlockDevice[]> {
-  if (edl) {
+/** Flash targets for the current write path: EDL or Rockchip USB boards mapped onto BlockDevice, else block devices. */
+export async function getTargetDevices(bus: TargetBus): Promise<BlockDevice[]> {
+  if (bus === 'edl') {
     const qdlDevices = await getQdlDevices();
     return qdlDevices.map(qdlToBlockDevice);
+  }
+  if (bus === 'rockusb') {
+    const boards = await getRockusbDevices();
+    return boards.map(rockusbToBlockDevice);
   }
   return getBlockDevices();
 }
 
-/** Whether the selected `device` is still attached, matched by path among EDL or block devices. */
-export async function isTargetConnected(device: BlockDevice, edl: boolean): Promise<boolean> {
-  if (edl) {
-    const qdlDevices = await getQdlDevices();
-    return isDeviceConnected(device.path, qdlDevices.map(qdlToBlockDevice));
-  }
-  const devices = await getBlockDevices();
-  return isDeviceConnected(device.path, devices);
+/** Whether the selected `device` is still attached, matched by path on the bus it was picked from. */
+export async function isTargetConnected(device: BlockDevice, bus: TargetBus): Promise<boolean> {
+  return isDeviceConnected(device.path, await getTargetDevices(bus));
 }
 
 /** Flash a QDL image (TAR archive) to the EDL device at `devicePath` (QdlDevice.path); `autoconfig` injects a profile */
@@ -287,6 +286,26 @@ export async function flashQdlUfsImage(
   autoconfig?: AutoconfigConfig | null
 ): Promise<void> {
   return invoke('flash_qdl_ufs_image', { imagePath, soc, boardSlug, devicePath, autoconfig });
+}
+
+// === Rockchip boards over USB (rockusb) ===
+
+/** Detect Rockchip boards connected via USB in Maskrom or Loader mode */
+export async function getRockusbDevices(): Promise<RockchipDevice[]> {
+  return invoke('get_rockusb_devices');
+}
+
+/** Flash a decompressed image to `storage` on the Rockchip board at `devicePath` (RockchipDevice.path);
+ * `boardSoc` lets the backend refuse a board with another SoC. */
+export async function flashRockusbImage(
+  imagePath: string,
+  devicePath: string,
+  storage: BoardStorage,
+  verify: boolean,
+  boardSoc?: string | null,
+  autoconfig?: AutoconfigConfig | null
+): Promise<void> {
+  return invoke('flash_rockusb_image', { imagePath, devicePath, storage, verify, boardSoc, autoconfig });
 }
 
 // === Dev scenarios emulator (debug builds only: a rejected dev_scenarios_status means release) ===

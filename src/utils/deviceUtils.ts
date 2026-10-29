@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
-import type { BlockDevice, QdlDevice } from '../types';
+import type { BlockDevice, QdlDevice, RockchipDevice } from '../types';
 import type { DeviceType } from '../config/constants';
 
 /** Check if device lists are different (by comparing paths and sizes). */
@@ -28,6 +28,22 @@ export function qdlToBlockDevice(qdl: QdlDevice): BlockDevice {
     size: 0,
     size_formatted: '',
     model: 'Qualcomm Emergency Download',
+    is_removable: true,
+    is_system: false,
+    bus_type: 'USB',
+    is_read_only: false,
+  };
+}
+
+/** Map a Rockchip USB board onto BlockDevice; the model names the chip when Maskrom identifies it. */
+export function rockusbToBlockDevice(board: RockchipDevice): BlockDevice {
+  const mode = board.mode === 'maskrom' ? 'Maskrom' : 'Loader';
+  return {
+    path: board.path,
+    name: `${mode} · USB ${board.bus_id}-${board.port_chain}`,
+    size: 0,
+    size_formatted: '',
+    model: board.soc ? `Rockchip ${board.soc}` : 'Rockchip board',
     is_removable: true,
     is_system: false,
     bus_type: 'USB',

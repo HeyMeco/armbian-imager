@@ -71,6 +71,15 @@
         "timezone": "Strefa czasowa",
         "keys": "Klucze SSH"
       }
+    },
+    "boardConnecting": "Łączenie z płytką...",
+    "boardLoader": "Uruchamianie loadera płytki...",
+    "boardStorage": {
+      "rowLabel": "Pamięć płytki",
+      "emmc": "eMMC",
+      "sd": "Karta SD",
+      "spinor": "Pamięć SPI NOR",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Zablokowane",
     "qdlNotFound": "Nie znaleziono urządzenia EDL. Przełącz płytkę w tryb EDL i podłącz przez USB.",
     "qdlInstructions": "Umieść zworkę na pinach JCTL, a następnie podłącz kabel USB-C.",
-    "qdlInstructionsButton": "Przytrzymaj przycisk EDL podczas włączania, a następnie podłącz kabel USB."
+    "qdlInstructionsButton": "Przytrzymaj przycisk EDL podczas włączania, a następnie podłącz kabel USB.",
+    "targetLabel": "Zapisz na",
+    "targetDisk": "Dysk lub karta",
+    "targetBoard": "Płytka Rockchip",
+    "rockusbNotFound": "Nie znaleziono płytki Rockchip. Podłącz płytkę przez USB w trybie Maskrom lub Loader.",
+    "rockusbInstructions": "Przytrzymaj przycisk Maskrom lub Recovery, podłącz port USB OTG płytki do tego komputera, a następnie puść przycisk."
   },
   "header": {
     "stepManufacturer": "Producent",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Otwórz zgłoszenie na GitHubie",
     "logsStepPaste": "Wklej link i opisz problem",
     "logsCaption": "Logi Armbian",
-    "openInBrowser": "Otwórz w przeglądarce"
+    "openInBrowser": "Otwórz w przeglądarce",
+    "boardDevicesTitle": "Nie udało się wyszukać płytek Rockchip",
+    "boardDevicesHint": "Podłącz płytkę ponownie przez USB i spróbuj jeszcze raz."
   },
   "error": {
     "downloadFailed": "Pobieranie nie powiodło się",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Nie udało się odczytać urządzenia, aby zweryfikować zapis. Podłącz je ponownie i spróbuj jeszcze raz albo użyj innej karty lub czytnika.",
     "imageDecompressFailed": "Nie udało się rozpakować obrazu. Plik może być uszkodzony lub niekompletny. Pobierz go ponownie lub wybierz inny plik.",
     "imageInvalid": "Plik obrazu jest pusty lub nie nadaje się do użycia. Wybierz go ponownie lub pobierz nową kopię.",
-    "flashBusy": "Poprzedni zapis jeszcze się kończy. Poczekaj chwilę i spróbuj ponownie."
+    "flashBusy": "Poprzedni zapis jeszcze się kończy. Poczekaj chwilę i spróbuj ponownie.",
+    "rockusbDeviceNotFound": "Wybrana płytka nie jest już podłączona. Podłącz ją ponownie w trybie Maskrom lub Loader i wybierz ponownie.",
+    "rockusbMultipleDevices": "Na tym porcie USB jest więcej niż jedna płytka Rockchip. Podłącz tylko płytkę, którą chcesz zapisać.",
+    "rockusbPermissionDenied": "Odmówiono dostępu USB do płytki. Zamknij inne narzędzia do zapisu, takie jak RKDevTool lub rkdeveloptool, i spróbuj ponownie.",
+    "rockusbPermissionDeniedLinux": "Odmowa dostępu do USB. Zainstaluj regułę udev, a następnie podłącz płytkę ponownie: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "Nie można użyć sterownika USB płytki. W systemie Windows zastąp go sterownikiem WinUSB za pomocą Zadig (zadig.akeo.ie), a następnie podłącz płytkę ponownie.",
+    "rockusbConnectionFailed": "Nie udało się połączyć z płytką. Podłącz ją ponownie w trybie Maskrom lub Loader i spróbuj jeszcze raz.",
+    "rockusbDisconnected": "Płytka została odłączona podczas zapisu. Podłącz ją ponownie w trybie Maskrom i spróbuj jeszcze raz.",
+    "rockusbTimeout": "Płytka przestała odpowiadać. Podłącz ją ponownie w trybie Maskrom i spróbuj jeszcze raz.",
+    "rockusbUnsupportedSoc": "Ta wersja Armbian Imager nie ma loadera Maskrom dla układu tej płytki. Uruchom płytkę w trybie Loader albo zapisz dysk lub kartę.",
+    "rockusbSocMismatch": "Ten obraz jest dla innego układu niż podłączona płytka. Wybierz obraz przygotowany dla Twojej płytki.",
+    "rockusbLoaderUnavailable": "Nie udało się pobrać loadera płytki. Sprawdź połączenie z internetem i spróbuj ponownie.",
+    "rockusbLoaderFailed": "Płytka nie przyjęła loadera. Wyłącz ją, ponownie wejdź w tryb Maskrom i spróbuj jeszcze raz.",
+    "rockusbNoLoaderMode": "Loader został wysłany, ale płytka nie pojawiła się ponownie na USB. Wyłącz ją, ponownie wejdź w tryb Maskrom i spróbuj jeszcze raz.",
+    "rockusbStorageUnavailable": "Płytka nie ma wybranej pamięci albo jej loader nie ma do niej dostępu. Wybierz inną pamięć i spróbuj ponownie."
   },
   "custom": {
     "customImage": "Własny obraz",

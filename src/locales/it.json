@@ -71,6 +71,15 @@
         "timezone": "Fuso orario",
         "keys": "Chiavi SSH"
       }
+    },
+    "boardConnecting": "Connessione alla scheda...",
+    "boardLoader": "Avvio del loader della scheda...",
+    "boardStorage": {
+      "rowLabel": "Memoria della scheda",
+      "emmc": "eMMC",
+      "sd": "Scheda SD",
+      "spinor": "Flash SPI NOR",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Bloccato",
     "qdlNotFound": "Nessun dispositivo EDL trovato. Metti la scheda in modalità EDL e collegala via USB.",
     "qdlInstructions": "Posiziona il jumper sui pin JCTL, poi collega il cavo USB-C.",
-    "qdlInstructionsButton": "Tieni premuto il pulsante EDL all'accensione, poi collega il cavo USB."
+    "qdlInstructionsButton": "Tieni premuto il pulsante EDL all'accensione, poi collega il cavo USB.",
+    "targetLabel": "Scrivi su",
+    "targetDisk": "Disco o scheda",
+    "targetBoard": "Scheda Rockchip",
+    "rockusbNotFound": "Nessuna scheda Rockchip trovata. Collega la scheda via USB in modalità Maskrom o Loader.",
+    "rockusbInstructions": "Tieni premuto il pulsante Maskrom o Recovery, collega la porta USB OTG della scheda a questo computer, poi rilascia il pulsante."
   },
   "header": {
     "stepManufacturer": "Produttore",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Apri una issue su GitHub",
     "logsStepPaste": "Incolla il link e descrivi il problema",
     "logsCaption": "Log Armbian",
-    "openInBrowser": "Apri nel browser"
+    "openInBrowser": "Apri nel browser",
+    "boardDevicesTitle": "Impossibile cercare le schede Rockchip",
+    "boardDevicesHint": "Ricollega la scheda via USB e riprova."
   },
   "error": {
     "downloadFailed": "Download non riuscito",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Non è stato possibile rileggere il dispositivo per verificare la scrittura. Ricollegalo e riprova, oppure prova un'altra scheda o un altro lettore.",
     "imageDecompressFailed": "Non è stato possibile decomprimere l'immagine. Il file potrebbe essere danneggiato o incompleto. Scaricalo di nuovo o scegli un altro file.",
     "imageInvalid": "Il file immagine è vuoto o inutilizzabile. Sceglilo di nuovo o scarica una copia nuova.",
-    "flashBusy": "La scrittura precedente non è ancora terminata. Attendi un momento e riprova."
+    "flashBusy": "La scrittura precedente non è ancora terminata. Attendi un momento e riprova.",
+    "rockusbDeviceNotFound": "La scheda selezionata non è più collegata. Ricollegala in modalità Maskrom o Loader e selezionala di nuovo.",
+    "rockusbMultipleDevices": "Su questa porta USB c'è più di una scheda Rockchip. Collega solo la scheda da scrivere.",
+    "rockusbPermissionDenied": "Accesso USB alla scheda negato. Chiudi altri strumenti di scrittura come RKDevTool o rkdeveloptool e riprova.",
+    "rockusbPermissionDeniedLinux": "Accesso USB negato. Installa una regola udev, poi ricollega la scheda: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "Il driver USB della scheda non è utilizzabile. Su Windows sostituiscilo con il driver WinUSB tramite Zadig (zadig.akeo.ie), poi ricollega la scheda.",
+    "rockusbConnectionFailed": "Impossibile connettersi alla scheda. Ricollegala in modalità Maskrom o Loader e riprova.",
+    "rockusbDisconnected": "La scheda si è disconnessa durante la scrittura. Ricollegala in modalità Maskrom e riprova.",
+    "rockusbTimeout": "La scheda ha smesso di rispondere. Ricollegala in modalità Maskrom e riprova.",
+    "rockusbUnsupportedSoc": "Questa versione di Armbian Imager non ha un loader Maskrom per il chip di questa scheda. Avvia la scheda in modalità Loader, oppure scrivi un disco o una scheda di memoria.",
+    "rockusbSocMismatch": "Questa immagine è per un chip diverso da quello della scheda collegata. Scegli l'immagine fatta per la tua scheda.",
+    "rockusbLoaderUnavailable": "Impossibile scaricare il loader della scheda. Controlla la connessione a internet e riprova.",
+    "rockusbLoaderFailed": "La scheda non ha accettato il loader. Spegnila, rientra in modalità Maskrom e riprova.",
+    "rockusbNoLoaderMode": "Il loader è stato inviato, ma la scheda non è ricomparsa via USB. Spegnila, rientra in modalità Maskrom e riprova.",
+    "rockusbStorageUnavailable": "La scheda non ha la memoria scelta, oppure il suo loader non vi accede. Scegli un'altra memoria e riprova."
   },
   "custom": {
     "customImage": "Immagine Personalizzata",

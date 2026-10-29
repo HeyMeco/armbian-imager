@@ -71,6 +71,15 @@
         "timezone": "Zeitzone",
         "keys": "SSH-Schlüssel"
       }
+    },
+    "boardConnecting": "Verbindung zum Board wird hergestellt...",
+    "boardLoader": "Loader des Boards wird gestartet...",
+    "boardStorage": {
+      "rowLabel": "Speicher des Boards",
+      "emmc": "eMMC",
+      "sd": "SD-Karte",
+      "spinor": "SPI-NOR-Flash",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "Gesperrt",
     "qdlNotFound": "Kein EDL-Gerät gefunden. Versetze dein Board in den EDL-Modus und verbinde es per USB.",
     "qdlInstructions": "Setze den Jumper auf die JCTL-Pins und schließe dann das USB-C-Kabel an.",
-    "qdlInstructionsButton": "Halte beim Einschalten die EDL-Taste gedrückt und schließe dann das USB-Kabel an."
+    "qdlInstructionsButton": "Halte beim Einschalten die EDL-Taste gedrückt und schließe dann das USB-Kabel an.",
+    "targetLabel": "Schreiben auf",
+    "targetDisk": "Laufwerk oder Karte",
+    "targetBoard": "Rockchip-Board",
+    "rockusbNotFound": "Kein Rockchip-Board gefunden. Verbinde das Board per USB im Maskrom- oder Loader-Modus.",
+    "rockusbInstructions": "Halte die Maskrom- oder Recovery-Taste gedrückt, stecke den USB-OTG-Anschluss des Boards an diesen Computer und lass die Taste dann los."
   },
   "header": {
     "stepManufacturer": "Hersteller",
@@ -160,7 +174,9 @@
     "logsStepIssue": "Issue auf GitHub öffnen",
     "logsStepPaste": "Link einfügen und Problem beschreiben",
     "logsCaption": "Armbian-Logs",
-    "openInBrowser": "Im Browser öffnen"
+    "openInBrowser": "Im Browser öffnen",
+    "boardDevicesTitle": "Rockchip-Boards konnten nicht gesucht werden",
+    "boardDevicesHint": "Verbinde das Board erneut per USB und versuche es noch einmal."
   },
   "error": {
     "downloadFailed": "Download fehlgeschlagen",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "Das Gerät konnte zur Überprüfung des Schreibvorgangs nicht zurückgelesen werden. Verbinde es erneut und versuche es noch einmal oder verwende eine andere Karte oder einen anderen Leser.",
     "imageDecompressFailed": "Das Image konnte nicht entpackt werden. Die Datei ist möglicherweise beschädigt oder unvollständig. Lade sie erneut herunter oder wähle eine andere Datei.",
     "imageInvalid": "Die Image-Datei ist leer oder unbrauchbar. Wähle sie erneut aus oder lade eine neue Kopie herunter.",
-    "flashBusy": "Der vorherige Flash-Vorgang wird noch abgeschlossen. Warte einen Moment und versuche es erneut."
+    "flashBusy": "Der vorherige Flash-Vorgang wird noch abgeschlossen. Warte einen Moment und versuche es erneut.",
+    "rockusbDeviceNotFound": "Das ausgewählte Board ist nicht mehr verbunden. Verbinde es erneut im Maskrom- oder Loader-Modus und wähle es wieder aus.",
+    "rockusbMultipleDevices": "An diesem USB-Anschluss hängt mehr als ein Rockchip-Board. Verbinde nur das Board, das du flashen willst.",
+    "rockusbPermissionDenied": "USB-Zugriff auf das Board verweigert. Schließe andere Flash-Tools wie RKDevTool oder rkdeveloptool und versuche es erneut.",
+    "rockusbPermissionDeniedLinux": "USB-Zugriff verweigert. Installiere eine udev-Regel und verbinde das Board dann neu: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "Der USB-Treiber des Boards kann nicht verwendet werden. Ersetze ihn unter Windows mit Zadig (zadig.akeo.ie) durch den WinUSB-Treiber und verbinde das Board dann neu.",
+    "rockusbConnectionFailed": "Keine Verbindung zum Board möglich. Verbinde es erneut im Maskrom- oder Loader-Modus und versuche es noch einmal.",
+    "rockusbDisconnected": "Das Board wurde während des Flashens getrennt. Verbinde es erneut im Maskrom-Modus und versuche es noch einmal.",
+    "rockusbTimeout": "Das Board reagiert nicht mehr. Verbinde es erneut im Maskrom-Modus und versuche es noch einmal.",
+    "rockusbUnsupportedSoc": "Diese Version von Armbian Imager hat keinen Maskrom-Loader für den Chip dieses Boards. Starte das Board im Loader-Modus oder beschreibe stattdessen ein Laufwerk oder eine Karte.",
+    "rockusbSocMismatch": "Dieses Image ist für einen anderen Chip als das verbundene Board. Wähle das Image für dein Board.",
+    "rockusbLoaderUnavailable": "Der Loader des Boards konnte nicht heruntergeladen werden. Prüfe deine Internetverbindung und versuche es erneut.",
+    "rockusbLoaderFailed": "Das Board hat den Loader nicht angenommen. Schalte es aus, versetze es erneut in den Maskrom-Modus und versuche es noch einmal.",
+    "rockusbNoLoaderMode": "Der Loader wurde gesendet, aber das Board hat sich nicht wieder per USB gemeldet. Schalte es aus, versetze es erneut in den Maskrom-Modus und versuche es noch einmal.",
+    "rockusbStorageUnavailable": "Das Board hat den gewählten Speicher nicht, oder sein Loader erreicht ihn nicht. Wähle einen anderen Speicher und versuche es erneut."
   },
   "custom": {
     "customImage": "Benutzerdefiniertes Image",

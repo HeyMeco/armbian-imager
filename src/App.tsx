@@ -16,11 +16,11 @@ import { UpdateProvider, useUpdate } from './contexts/UpdateContext';
 import { useMotion } from './contexts/MotionContext';
 import { getArmbianBoardDetection, getShowWelcome, getAutoconfigProfile } from './hooks/useSettings';
 import { EVENTS, SLUGS, VENDOR, IMAGE_VARIANT, LOCAL_SOURCE_LABEL, UI, SETTINGS, SETTINGS_VIEW, PLATFORM } from './config';
-import { IMAGE_FORMAT, IMAGE_STORAGE, isEdlImage } from './types';
+import { BOARD_STORAGE, FLASH_TARGET, IMAGE_FORMAT, IMAGE_STORAGE, resolveFlashMethod, targetBus } from './types';
 import { presetIsEmpty } from './config/autoconfig';
 import { DEFAULT_COLOR, buildLocalImage, buildLocalBoard, localManufacturer, focusAfterInput } from './utils';
 import { imageErrorKey } from './utils/errorUtils';
-import type { BoardInfo, ImageInfo, BlockDevice, SelectionStep, Manufacturer, ArmbianDetectionOutcome, ArmbianReleaseInfo, AutoconfigConfig, CustomImageInfo, FlashExit, LeaveGuard, SettingsView } from './types';
+import type { BoardInfo, ImageInfo, BlockDevice, BoardStorage, FlashTarget, SelectionStep, Manufacturer, ArmbianDetectionOutcome, ArmbianReleaseInfo, AutoconfigConfig, CustomImageInfo, FlashExit, LeaveGuard, SettingsView } from './types';
 import './styles/index.css';
 
 // Debug-only panel; the define folds to false in release builds, which drops the chunk.
@@ -53,6 +53,10 @@ function AppContent() {
   const [selectedBoard, setSelectedBoard] = useState<BoardInfo | null>(null);
   const [selectedImage, setSelectedImage] = useState<ImageInfo | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<BlockDevice | null>(null);
+  // Block images go to a disk/card or, for Rockchip boards, straight to the board over USB.
+  const [flashTarget, setFlashTarget] = useState<FlashTarget>(FLASH_TARGET.DISK);
+  const [boardStorage, setBoardStorage] = useState<BoardStorage>(BOARD_STORAGE.EMMC);
+  const flashMethod = selectedImage ? resolveFlashMethod(selectedImage, flashTarget) : undefined;
   // Opt-in autoconfig profile id picked at flash time; null means unchanged behaviour.
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [autoconfig, setAutoconfig] = useState<AutoconfigConfig | null>(null);
@@ -202,7 +206,7 @@ function AppContent() {
   // Clear selected device if disconnected, only when not flashing
   useDeviceMonitor(
     selectedDevice,
-    !!selectedImage && isEdlImage(selectedImage),
+    targetBus(flashMethod),
     useCallback(() => setSelectedDevice(null), []),
     !isFlashing
   );
@@ -451,7 +455,12 @@ function AppContent() {
 
     if (stepIndex <= 0) setSelectedManufacturer(null);
     if (stepIndex <= 1) setSelectedBoard(null);
-    if (stepIndex <= 2) setSelectedImage(null);
+    if (stepIndex <= 2) {
+      setSelectedImage(null);
+      // A new image starts on the disk flow; the board choice belongs to the image it was made for.
+      setFlashTarget(FLASH_TARGET.DISK);
+      setBoardStorage(BOARD_STORAGE.EMMC);
+    }
     if (stepIndex <= 3) {
       setSelectedDevice(null);
       // The profile picker belongs to the device step; drop the opt-in selection.
@@ -482,6 +491,12 @@ function AppContent() {
   // Confirm the inline summary: begin flashing the picked device
   function handleConfirmFlash() {
     setIsFlashing(true);
+  }
+
+  // Switching between disk and board lists drops a device picked from the other one
+  function handleFlashTargetChange(target: FlashTarget) {
+    setFlashTarget(target);
+    setSelectedDevice(null);
   }
 
   // Cancel the inline confirm: drop back to the device list
@@ -617,6 +632,7 @@ function AppContent() {
         selectedBoard={selectedBoard}
         selectedImage={selectedImage}
         selectedDevice={selectedDevice}
+        flashMethod={flashMethod}
         onReset={handleReset}
         onNavigateToStep={handleNavigateToStep}
         isFlashing={isFlashing}
@@ -643,6 +659,8 @@ function AppContent() {
               image={selectedImage}
               device={selectedDevice}
               autoconfig={autoconfig}
+              flashTarget={flashTarget}
+              boardStorage={boardStorage}
               onComplete={handleComplete}
               onBack={handleBackFromFlash}
               onSettledChange={DevScenarios ? handleFlashSettled : undefined}
@@ -681,6 +699,10 @@ function AppContent() {
             onSelectDevice={handleDeviceSelect}
             onConfirmDevice={handleConfirmFlash}
             onClearDevice={handleClearDevice}
+            flashTarget={flashTarget}
+            onFlashTargetChange={handleFlashTargetChange}
+            boardStorage={boardStorage}
+            onBoardStorageChange={setBoardStorage}
             onOpenUpdate={() => openSettings(SETTINGS_VIEW.ABOUT)}
             isOnline={isOnline}
             entering={entering}

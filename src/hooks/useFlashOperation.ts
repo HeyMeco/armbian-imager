@@ -5,14 +5,26 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ImageInfo, BlockDevice, AutoconfigConfig } from '../types';
-import { FLASH_METHOD, deriveFlashMethod, isEdlMethod, isIdleFlashProgress, isQdlWriteStage } from '../types';
+import type { ImageInfo, BlockDevice, AutoconfigConfig, BoardStorage, FlashTarget } from '../types';
+import {
+  BOARD_STORAGE,
+  FLASH_METHOD,
+  FLASH_TARGET,
+  isBoardMethod,
+  isBoardWriteStage,
+  isEdlMethod,
+  isIdleFlashProgress,
+  isQdlWriteStage,
+  resolveFlashMethod,
+  targetBus,
+} from '../types';
 import { PHASE_ORDER, type FlashStage, type FlashPhase } from '../components/flash/FlashStageIcon';
 import {
   downloadImage,
   flashImage,
   flashQdlImage,
   flashQdlUfsImage,
+  flashRockusbImage,
   getDownloadProgress,
   getFlashProgress,
   cancelOperation,
@@ -28,9 +40,9 @@ import {
   listCachedImages,
 } from './useTauri';
 import { getSkipVerify } from './useSettings';
-import { POLLING, CACHE, STORAGE_KEYS, FLASH_PREP_STAGE, QDL_STAGE } from '../config';
+import { POLLING, CACHE, STORAGE_KEYS, FLASH_PREP_STAGE, QDL_STAGE, BOARD_STAGE } from '../config';
 import { getErrorMessage, armbianIdentityKey, isCompressedImage } from '../utils';
-import { isDeviceRefusalError, isShaUnavailableError, translateFlashError } from '../utils/errorUtils';
+import { isDeviceRefusalError, isRockusbError, isShaUnavailableError, translateFlashError } from '../utils/errorUtils';
 
 interface UseFlashOperationProps {
   image: ImageInfo;
@@ -41,6 +53,10 @@ interface UseFlashOperationProps {
   boardSlug?: string;
   /** Opt-in autoconfig profile config written into the image on first boot; null when none. */
   autoconfig?: AutoconfigConfig | null;
+  /** Disk/card or Rockchip board over USB; only changes the write path of a block image. */
+  flashTarget?: FlashTarget;
+  /** Storage on the board a rockusb flash writes to. */
+  boardStorage?: BoardStorage;
   onBack: () => void;
 }
 
@@ -52,7 +68,7 @@ interface UseFlashOperationReturn {
   imagePath: string | null;
   showShaWarning: boolean;
   verifyAborted: boolean;
-  /** An EDL flash cancelled after the board's storage started to change. */
+  /** A board flash (EDL or rockusb) cancelled after the board's storage started to change. */
   cancelledAfterWrite: boolean;
   handleCancel: () => Promise<void>;
   handleRetry: () => Promise<void>;
@@ -97,6 +113,8 @@ export function useFlashOperation({
   soc,
   boardSlug,
   autoconfig,
+  flashTarget = FLASH_TARGET.DISK,
+  boardStorage = BOARD_STORAGE.EMMC,
   onBack,
 }: UseFlashOperationProps): UseFlashOperationReturn {
   const { t } = useTranslation();
@@ -188,18 +206,22 @@ export function useFlashOperation({
   // Cancel or unmount during an await must not start the next step, above all the write.
   const isAborted = () => userCancelledRef.current || !mountedRef.current;
 
-  // Write path: TAR-based QDL ('qdl'), raw UFS over QDL ('qdl-ufs'), or block dd.
-  const flashMethod = deriveFlashMethod(image);
+  // Write path: TAR-based QDL ('qdl'), raw UFS over QDL ('qdl-ufs'), rockusb to a board, or block dd.
+  const flashMethod = resolveFlashMethod(image, flashTarget);
   // isQdlMode == the TAR path specifically (extract + rawprogram, no download cleanup).
   const isQdlMode = flashMethod === FLASH_METHOD.QDL;
   const isUfsMode = flashMethod === FLASH_METHOD.QDL_UFS;
-  // Both flash an EDL device, so they share device handling, auth skip, and no block verify.
+  const isRockusbFlash = flashMethod === FLASH_METHOD.ROCKUSB;
+  // Both flash an EDL device: no block verify, progress from the QDL stage.
   const isEdlFlash = isEdlMethod(flashMethod);
+  // EDL and rockusb write a board over USB: no disk authorization, the device re-enumerates mid-flash.
+  const isBoardFlash = isBoardMethod(flashMethod);
+  const bus = targetBus(flashMethod);
 
   /** Check the device is connected; trigger the disconnect handler and return false if not */
   const checkDeviceOrDisconnect = useCallback(async (): Promise<boolean> => {
     try {
-      if (!(await isTargetConnected(device, isEdlFlash))) {
+      if (!(await isTargetConnected(device, bus))) {
         await handleDeviceDisconnectedInternal();
         return false;
       }
@@ -208,7 +230,7 @@ export function useFlashOperation({
     }
     return true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [device.path, isEdlFlash]);
+  }, [device.path, bus]);
 
   /** Handle device disconnection during operations */
   const handleDeviceDisconnectedInternal = useCallback(async () => {
@@ -234,9 +256,9 @@ export function useFlashOperation({
   }, [t, clearIntervals, failFlash]);
 
   // Monitor device connection during active operations.
-  // QDL flash stages are excluded: the USB device is busy/resets during Sahara/Firehose (expected).
+  // Board flash stages are excluded: the USB device is busy/resets during Sahara/Firehose or the Maskrom loader (expected).
   useEffect(() => {
-    const activeStages: FlashStage[] = isEdlFlash
+    const activeStages: FlashStage[] = isBoardFlash
       ? ['downloading', 'verifying_sha', 'decompressing']
       : ['downloading', 'verifying_sha', 'decompressing',
          FLASH_PREP_STAGE.APPLYING_PROFILE, 'flashing', 'verifying'];
@@ -257,7 +279,7 @@ export function useFlashOperation({
         deviceMonitorRef.current = null;
       }
     };
-  }, [stage, device.path, isEdlFlash, handleDeviceDisconnectedInternal, checkDeviceOrDisconnect]);
+  }, [stage, device.path, isBoardFlash, handleDeviceDisconnectedInternal, checkDeviceOrDisconnect]);
 
   /** Handle custom image flow (decompress if needed, then flash) */
   async function handleCustomImage(customPath: string) {
@@ -403,6 +425,25 @@ export function useFlashOperation({
             maxProgressRef.current = prog.progress_percent;
             setProgress(prog.progress_percent);
           }
+        } else if (!preparing && isRockusbFlash) {
+          // Stages before the write are indeterminate; write and verify carry the byte progress.
+          const boardStage = prog.board_stage;
+          if (boardStage === BOARD_STAGE.LOADER || boardStage === BOARD_STAGE.RECONNECTING) {
+            setStage('board_loader');
+          } else if (boardStage === BOARD_STAGE.CONNECTING || boardStage === BOARD_STAGE.STORAGE) {
+            setStage('board_connecting');
+          } else if (boardStage === BOARD_STAGE.WRITING || boardStage === BOARD_STAGE.VERIFYING) {
+            flashWriteSeenRef.current = true;
+            const verifying = boardStage === BOARD_STAGE.VERIFYING;
+            setStage(verifying ? 'verifying' : 'flashing');
+            if (verifying && maxProgressRef.current > 50 && prog.progress_percent < maxProgressRef.current) {
+              maxProgressRef.current = 0;
+            }
+            if (prog.progress_percent >= maxProgressRef.current) {
+              maxProgressRef.current = prog.progress_percent;
+              setProgress(prog.progress_percent);
+            }
+          }
         } else if (!preparing && !isEdlFlash) {
           // A non-verifying poll means this run is actually writing: open the latch.
           // An EDL run reports no block progress before QDL starts (extraction, loader fetch), so only its QDL stage counts.
@@ -451,6 +492,16 @@ export function useFlashOperation({
       } else if (isQdlMode) {
         // QDL path: TAR archive → extract → Sahara → Firehose
         await flashQdlImage(path, device.path, autoconfigRef.current ?? undefined);
+      } else if (isRockusbFlash) {
+        // rockusb path: decompressed .img → [Maskrom loader] → storage → LBA write → read-back
+        await flashRockusbImage(
+          path,
+          device.path,
+          boardStorage,
+          !skipVerifyRef.current,
+          soc ?? null,
+          autoconfigRef.current ?? undefined
+        );
       } else {
         await flashImage(path, device.path, device.size, !skipVerifyRef.current, autoconfigRef.current ?? undefined);
       }
@@ -477,7 +528,7 @@ export function useFlashOperation({
 
       // Increment failure count for cached (non-custom) images; skip on disconnect or a device
       // refusal (e.g. card too small, previous flash still finishing) so neither burns down a good cached image.
-      if (!image.is_custom && !isQdlMode && !deviceDisconnectedRef.current && !isDeviceRefusalError(rawError)) {
+      if (!image.is_custom && !isQdlMode && !deviceDisconnectedRef.current && !isDeviceRefusalError(rawError) && !isRockusbError(rawError)) {
         const currentCount = getFlashFailureCount() + 1;
         setFlashFailureCount(currentCount);
 
@@ -514,8 +565,8 @@ export function useFlashOperation({
       }
       if (isAborted()) return;
 
-      // EDL (QDL/UFS) skips block-device authorization (USB access handled by OS)
-      if (!isEdlFlash) {
+      // Board flashes (EDL, rockusb) skip block-device authorization (USB access handled by OS)
+      if (!isBoardFlash) {
         const authorized = await requestWriteAuthorization(device.path, device.size);
         if (isAborted()) return;
         if (!authorized) {
@@ -582,9 +633,10 @@ export function useFlashOperation({
   // The last poll can predate the step past the handshake, so ask once more.
   const boardWriteStarted = async (): Promise<boolean> => {
     if (flashWriteSeenRef.current) return true;
-    if (!isEdlFlash) return false;
+    if (!isBoardFlash) return false;
     try {
       const prog = await getFlashProgress();
+      if (isRockusbFlash) return isBoardWriteStage(prog.board_stage);
       return prog.is_qdl_mode && isQdlWriteStage(prog.qdl_stage);
     } catch {
       return false;
@@ -606,8 +658,8 @@ export function useFlashOperation({
         await cleanupImageSafely(imagePath, image.is_custom);
         return;
       }
-      // EDL: stay put so the blocking flash command can detect cancel and clean up
-      if (isEdlFlash) {
+      // Board flash: stay put so the flash command can detect cancel and clean up
+      if (isBoardFlash) {
         setCancelledAfterWrite(await boardWriteStarted());
         setProgress(0);
         setStage('cancelled');
@@ -622,10 +674,14 @@ export function useFlashOperation({
 
   const restartRun = async () => {
     if (imagePath) {
-      // EDL: skip block-device authorization (USB access handled by OS). The TAR path
-      // re-extracts (prepare), but a UFS .img is already decompressed and ready.
-      if (isEdlFlash) {
-        setPhases(buildPhases({ download: false, prepare: isQdlMode || hasProfile, verify: false }));
+      // Board flash: skip block-device authorization (USB access handled by OS). The TAR path
+      // re-extracts (prepare), but a UFS or rockusb .img is already decompressed and ready.
+      if (isBoardFlash) {
+        setPhases(buildPhases({
+          download: false,
+          prepare: isQdlMode || hasProfile,
+          verify: isRockusbFlash && !skipVerifyRef.current,
+        }));
         await startFlash(imagePath);
         return;
       }

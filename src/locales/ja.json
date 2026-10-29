@@ -71,6 +71,15 @@
         "timezone": "タイムゾーン",
         "keys": "SSHキー"
       }
+    },
+    "boardConnecting": "ボードに接続しています...",
+    "boardLoader": "ボードのローダーを起動しています...",
+    "boardStorage": {
+      "rowLabel": "ボードのストレージ",
+      "emmc": "eMMC",
+      "sd": "SD カード",
+      "spinor": "SPI NOR フラッシュ",
+      "ufs": "UFS"
     }
   },
   "modal": {
@@ -121,7 +130,12 @@
     "locked": "ロック中",
     "qdlNotFound": "EDLデバイスが見つかりません。ボードをEDLモードにして、USBで接続してください。",
     "qdlInstructions": "JCTLピンにジャンパーを取り付けてから、USB-Cケーブルを接続してください。",
-    "qdlInstructionsButton": "EDLボタンを押しながら電源を入れ、USBケーブルを接続してください。"
+    "qdlInstructionsButton": "EDLボタンを押しながら電源を入れ、USBケーブルを接続してください。",
+    "targetLabel": "書き込み先",
+    "targetDisk": "ディスク / カード",
+    "targetBoard": "Rockchip ボード",
+    "rockusbNotFound": "Rockchip ボードが見つかりません。Maskrom または Loader モードでボードを USB 接続してください。",
+    "rockusbInstructions": "Maskrom または Recovery ボタンを押したまま、ボードの USB OTG ポートをこのコンピューターに接続し、ボタンを離してください。"
   },
   "header": {
     "stepManufacturer": "メーカー",
@@ -160,7 +174,9 @@
     "logsStepIssue": "GitHubでIssueを作成",
     "logsStepPaste": "リンクを貼り付けて問題を説明",
     "logsCaption": "Armbian ログ",
-    "openInBrowser": "ブラウザで開く"
+    "openInBrowser": "ブラウザで開く",
+    "boardDevicesTitle": "Rockchip ボードを検索できませんでした",
+    "boardDevicesHint": "ボードを USB で接続し直してから、もう一度お試しください。"
   },
   "error": {
     "downloadFailed": "ダウンロードに失敗しました",
@@ -190,7 +206,21 @@
     "verifyReadFailed": "書き込みを検証するためにデバイスを読み戻せませんでした。再接続してもう一度お試しいただくか、別のカードまたはリーダーをお試しください。",
     "imageDecompressFailed": "イメージを展開できませんでした。ファイルが破損しているか、不完全な可能性があります。もう一度ダウンロードするか、別のファイルを選択してください。",
     "imageInvalid": "イメージファイルが空か、使用できません。もう一度選択するか、新しいコピーをダウンロードしてください。",
-    "flashBusy": "前回の書き込みがまだ終了処理中です。しばらく待ってからもう一度お試しください。"
+    "flashBusy": "前回の書き込みがまだ終了処理中です。しばらく待ってからもう一度お試しください。",
+    "rockusbDeviceNotFound": "選択したボードは接続されていません。Maskrom または Loader モードで接続し直し、もう一度選択してください。",
+    "rockusbMultipleDevices": "この USB ポートに複数の Rockchip ボードがあります。書き込むボードだけを接続してください。",
+    "rockusbPermissionDenied": "ボードへの USB アクセスが拒否されました。RKDevTool や rkdeveloptool など他の書き込みツールを閉じてから、もう一度お試しください。",
+    "rockusbPermissionDeniedLinux": "USB へのアクセスが拒否されました。udev ルールをインストールしてから、ボードを接続し直してください： echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2207\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-rockchip.rules && sudo udevadm control --reload-rules",
+    "rockusbDriverMissing": "ボードの USB ドライバーを使用できません。Windows では Zadig（zadig.akeo.ie）で WinUSB ドライバーに置き換えてから、ボードを接続し直してください。",
+    "rockusbConnectionFailed": "ボードに接続できませんでした。Maskrom または Loader モードで接続し直して、もう一度お試しください。",
+    "rockusbDisconnected": "書き込み中にボードの接続が切れました。Maskrom モードで接続し直して、もう一度お試しください。",
+    "rockusbTimeout": "ボードが応答しなくなりました。Maskrom モードで接続し直して、もう一度お試しください。",
+    "rockusbUnsupportedSoc": "このバージョンの Armbian Imager には、このボードのチップ用の Maskrom ローダーがありません。ボードを Loader モードで起動するか、ディスクまたはカードに書き込んでください。",
+    "rockusbSocMismatch": "このイメージは、接続されたボードとは別のチップ用です。お使いのボード用のイメージを選んでください。",
+    "rockusbLoaderUnavailable": "ボードのローダーをダウンロードできませんでした。インターネット接続を確認して、もう一度お試しください。",
+    "rockusbLoaderFailed": "ボードがローダーを受け付けませんでした。電源を切り、もう一度 Maskrom モードにしてからお試しください。",
+    "rockusbNoLoaderMode": "ローダーは送信されましたが、ボードが USB に再接続されませんでした。電源を切り、もう一度 Maskrom モードにしてからお試しください。",
+    "rockusbStorageUnavailable": "ボードに選択したストレージがないか、ローダーがアクセスできません。別のストレージを選んで、もう一度お試しください。"
   },
   "custom": {
     "customImage": "カスタムイメージ",

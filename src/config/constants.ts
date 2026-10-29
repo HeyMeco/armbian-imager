@@ -22,6 +22,18 @@ export const QDL_STAGE = {
   PARTITION_PREFIX: 'partition:',
 } as const;
 
+/** `board_stage` values from get_flash_progress; twin of rockchip::STAGE_* in Rust */
+export const BOARD_STAGE = {
+  CONNECTING: 'connecting',
+  LOADER: 'loader',
+  RECONNECTING: 'reconnecting',
+  STORAGE: 'storage',
+  WRITING: 'writing',
+  VERIFYING: 'verifying',
+  RESETTING: 'resetting',
+  COMPLETE: 'complete',
+} as const;
+
 /** Polling intervals in milliseconds */
 export const POLLING = {
   DEVICE_CHECK: 2000,

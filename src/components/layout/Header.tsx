@@ -7,7 +7,8 @@ import { useTranslation } from 'react-i18next';
 import armbianLogoWhite from '../../assets/armbian-logo-white.png';
 import armbianLogoBlack from '../../assets/armbian-logo-black.png';
 import type { BoardInfo, ImageInfo, BlockDevice, SelectionStep, Manufacturer } from '../../types';
-import { isEdlImage } from '../../types';
+import { isBoardMethod } from '../../types';
+import type { FlashMethod } from '../../types';
 import { isDetectedBoard } from '../../utils';
 import { SettingsButton } from '../settings';
 
@@ -16,6 +17,8 @@ interface HeaderProps {
   selectedBoard?: BoardInfo | null;
   selectedImage?: ImageInfo | null;
   selectedDevice?: BlockDevice | null;
+  /** Write path of the selected image and target; board methods label the last step "Device". */
+  flashMethod?: FlashMethod;
   onReset?: () => void;
   onNavigateToStep?: (step: SelectionStep) => void;
   isFlashing?: boolean;
@@ -40,6 +43,7 @@ export function Header({
   selectedBoard,
   selectedImage,
   selectedDevice,
+  flashMethod,
   onReset,
   onNavigateToStep,
   isFlashing,
@@ -59,8 +63,8 @@ export function Header({
   // Detected-board images show all 4 steps; generic .img files show 2.
   const hasDetectedBoard = isDetectedBoard(selectedBoard);
   const isGenericCustom = isCustomImage && !hasDetectedBoard;
-  // EDL targets are USB devices in download mode, not storage drives.
-  const isEdl = !!selectedImage && isEdlImage(selectedImage);
+  // EDL and Rockchip board targets are USB devices in download mode, not storage drives.
+  const isEdl = !!selectedImage && isBoardMethod(flashMethod);
   const targetLabel = t(isEdl ? 'header.stepDevice' : 'header.stepStorage');
   const steps = isGenericCustom
     ? [
