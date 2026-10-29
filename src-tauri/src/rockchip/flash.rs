@@ -34,7 +34,7 @@ use crate::flash::verify::{
 };
 use crate::flash::{cancelled_err, check_capacity, open_image, write_failed_err, FlashState};
 use crate::utils::tagged;
-use crate::{log_info, log_warn};
+use crate::{log_error, log_info, log_warn};
 
 const MODULE: &str = "rockchip::flash";
 
@@ -534,12 +534,82 @@ async fn verify_image(
             return Err(short_read_err(offset, len, read as usize));
         }
         if let Some(i) = first_difference(&expected[..len], &readback[..len]) {
+            let mismatch = readback[..len].to_vec();
+            diagnose_mismatch(device, image, offset, i, &expected[..len], &mismatch).await;
             return Err(data_mismatch_err(offset + i as u64));
         }
         offset += len as u64;
         state.verified_bytes.store(offset, Ordering::SeqCst);
     }
     check_verified_length(offset, image_len)
+}
+
+/// Log what the board returned for a chunk that failed verification, so a bad write, a flaky read
+/// and an address wrap can be told apart from one log.
+async fn diagnose_mismatch(
+    device: &mut Device,
+    image: &mut File,
+    offset: u64,
+    first: usize,
+    expected: &[u8],
+    actual: &[u8],
+) {
+    let at = first & !15;
+    let window = |b: &[u8]| hex::encode(&b[at..(at + 32).min(b.len())]);
+    let differing = expected.iter().zip(actual).filter(|(e, a)| e != a).count();
+    log_error!(
+        MODULE,
+        "Mismatch in chunk at byte {offset} (sector {}): first differing byte +{first}, {differing} of {} bytes differ",
+        offset / SECTOR_SIZE,
+        expected.len()
+    );
+    log_error!(MODULE, "  expected +{at}: {}", window(expected));
+    log_error!(MODULE, "  actual   +{at}: {}", window(actual));
+    let fill = if actual.iter().all(|b| *b == 0) {
+        "all zeros"
+    } else if actual.iter().all(|b| *b == 0xff) {
+        "all 0xff"
+    } else {
+        "data"
+    };
+    log_error!(MODULE, "  board returned {fill}");
+
+    // A second read: equal means the board holds this data, different means the read path is flaky.
+    let mut again = vec![0u8; actual.len()];
+    if let Ok(sector) = sector_of(offset) {
+        match with_timeout(device.read_lba(sector, &mut again)).await {
+            Ok(Ok(_)) => log_error!(
+                MODULE,
+                "  re-read: {}",
+                if again == actual {
+                    "same as the first read"
+                } else if again == expected {
+                    "now matches the image (flaky read)"
+                } else {
+                    "different from both (flaky read)"
+                }
+            ),
+            other => log_error!(MODULE, "  re-read failed: {:?}", other.err()),
+        }
+    }
+
+    // Does the returned chunk equal the image some power-of-two distance lower (an address wrap)?
+    for shift in [32u64 << 20, 16 << 20, 8 << 20, 4 << 20] {
+        let Some(src) = offset.checked_sub(shift) else {
+            continue;
+        };
+        let mut candidate = vec![0u8; actual.len()];
+        if image.seek(SeekFrom::Start(src)).is_ok()
+            && image.read_exact(&mut candidate).is_ok()
+            && candidate == actual
+        {
+            log_error!(
+                MODULE,
+                "  returned data is the image at byte {src} ({} MiB lower)",
+                shift >> 20
+            );
+        }
+    }
 }
 
 /// rockusb addresses 32-bit LBAs, so a board can take up to 2 TiB.
