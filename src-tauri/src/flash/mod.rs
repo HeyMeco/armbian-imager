@@ -60,6 +60,34 @@ impl QdlProgress {
     }
 }
 
+/// Rockchip board (rockusb) progress; the byte counters live on `FlashState` as for a disk.
+pub struct BoardProgress {
+    pub is_active: AtomicBool,
+    /// Current stage (e.g., "loader", "writing"), see `rockchip::STAGE_*`
+    pub stage: std::sync::Mutex<String>,
+}
+
+impl BoardProgress {
+    pub fn new() -> Self {
+        Self {
+            is_active: AtomicBool::new(false),
+            stage: std::sync::Mutex::new(String::new()),
+        }
+    }
+
+    pub fn reset(&self) {
+        self.is_active.store(false, Ordering::SeqCst);
+        *self.stage.lock().unwrap_or_else(|p| p.into_inner()) = String::new();
+    }
+
+    /// The stage while a board flash runs, else None.
+    pub fn current_stage(&self) -> Option<String> {
+        self.is_active
+            .load(Ordering::SeqCst)
+            .then(|| self.stage.lock().unwrap_or_else(|p| p.into_inner()).clone())
+    }
+}
+
 // Each flash command takes the next number.
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 
@@ -121,6 +149,7 @@ pub struct FlashState {
     pub is_cancelled: AtomicBool,
     pub error: Mutex<Option<String>>,
     pub qdl: QdlProgress,
+    pub board: BoardProgress,
     prep_stage: std::sync::Mutex<Option<&'static str>>,
     slot: Arc<Mutex<()>>,
     session_generation: AtomicU64,
@@ -138,6 +167,7 @@ impl FlashState {
             is_cancelled: AtomicBool::new(false),
             error: Mutex::new(None),
             qdl: QdlProgress::new(),
+            board: BoardProgress::new(),
             prep_stage: std::sync::Mutex::new(None),
             slot: Arc::new(Mutex::new(())),
             session_generation: AtomicU64::new(0),
@@ -212,6 +242,7 @@ impl FlashState {
         self.verified_bytes.store(0, Ordering::SeqCst);
         self.is_verifying.store(false, Ordering::SeqCst);
         self.qdl.reset();
+        self.board.reset();
         self.set_prep_stage(None);
     }
 

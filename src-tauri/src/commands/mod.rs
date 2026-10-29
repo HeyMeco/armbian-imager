@@ -10,6 +10,7 @@ pub mod dev_scenarios;
 pub mod operations;
 pub mod progress;
 pub mod qdl_operations;
+pub mod rockusb_operations;
 pub mod scraping;
 pub mod settings;
 pub mod ssh_keys;

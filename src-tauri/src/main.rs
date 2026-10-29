@@ -22,6 +22,7 @@ mod logging;
 mod paste;
 mod picture_cache;
 mod qdl;
+mod rockchip;
 mod ssh_keys;
 mod utils;
 
@@ -187,6 +188,8 @@ fn main() {
             commands::qdl_operations::get_qdl_devices,
             commands::qdl_operations::flash_qdl_image,
             commands::qdl_operations::flash_qdl_ufs_image,
+            commands::rockusb_operations::get_rockusb_devices,
+            commands::rockusb_operations::flash_rockusb_image,
             commands::custom_image::select_custom_image,
             commands::custom_image::check_needs_decompression,
             commands::custom_image::decompress_custom_image,

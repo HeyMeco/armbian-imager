@@ -43,6 +43,10 @@ dirs = "5"
 # QDL (Qualcomm Device Loader) for EDL-based board flashing (e.g., Arduino UNO Q)
 qdl = { git = "https://github.com/qualcomm/qdlrs", rev = "4cc11c81bad548504ec243493d30f5fb33c6ceff", features = ["usb"] }
 nusb = "0.2"
+# Rockchip USB protocol (Maskrom boot download + Loader LBA writes), over the same nusb transport
+rockusb = { version = "0.4", default-features = false, features = ["nusb"] }
+# Parses rkbin SPL loader files (the 0x471/0x472 entries uploaded in Maskrom)
+rockfile = "0.1.2"
 tar = "0.4"
 xmltree = "0.11"
 indexmap = "2"

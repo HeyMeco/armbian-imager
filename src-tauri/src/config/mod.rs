@@ -50,6 +50,24 @@ pub mod urls {
     pub fn qdl_blob_base() -> String {
         format!("{}/qdl/blob/", api_base())
     }
+
+    /// Raw file base of armbian/rkbin ({base}{commit}/{path}), source of the Rockchip Maskrom loaders
+    pub const RKBIN_RAW_BASE: &str = "https://raw.githubusercontent.com/armbian/rkbin/";
+}
+
+/// Rockchip board flashing over USB (rockusb)
+pub mod rockusb {
+    /// Sectors per LBA read/write command; rkdeveloptool's DEFAULT_RW_LBA
+    pub const RW_SECTORS: u32 = 128;
+
+    /// Longest a single USB command may take before the board is treated as hung (seconds)
+    pub const COMMAND_TIMEOUT_SECS: u64 = 30;
+
+    /// Longest to wait for a board to come back in Loader mode after the Maskrom upload (seconds)
+    pub const REENUMERATE_TIMEOUT_SECS: u64 = 15;
+
+    /// Re-scan interval while waiting for that (milliseconds)
+    pub const REENUMERATE_POLL_MS: u64 = 250;
 }
 
 /// Download and decompression settings

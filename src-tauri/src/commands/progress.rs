@@ -36,6 +36,8 @@ pub struct FlashProgress {
     pub partitions_total: u64,
     /// Number of partitions programmed so far in QDL mode
     pub partitions_written: u64,
+    /// Rockchip board flash stage (e.g. "loader", "writing"); None unless one is running
+    pub board_stage: Option<String>,
     /// Autoconfig work before the write: "copying", then "applying_profile"
     pub prep_stage: Option<&'static str>,
     /// A flash is waiting for the previous one to finish; every other field still describes that one
@@ -134,6 +136,7 @@ pub async fn get_flash_progress(state: State<'_, AppState>) -> Result<FlashProgr
         qdl_stage,
         partitions_total,
         partitions_written,
+        board_stage: fs.board.current_stage(),
         prep_stage: fs.prep_stage(),
         is_waiting,
     })
