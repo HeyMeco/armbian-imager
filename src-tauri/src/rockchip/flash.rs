@@ -65,26 +65,32 @@ pub async fn rockusb_flash(
         found.mode
     );
 
-    let info = match found.mode {
-        RockchipMode::Loader => info,
-        RockchipMode::Maskrom => {
-            let soc = socs::find_by_maskrom_pid(found.product_id).ok_or_else(|| {
-                format!(
-                    "{TAG_ROCKUSB_UNSUPPORTED_SOC} no loader for Maskrom PID {:#06x}",
-                    found.product_id
-                )
-            })?;
-            check_same_family(image_family, soc)?;
-            let entries = loader::ensure_loader(soc).await?;
-            state.ensure_not_cancelled()?;
+    // bcdUSB only hints at the mode: RK3576 usbplug keeps the boot ROM's PID and bcdUSB 0x0200,
+    // so a board that already runs a loader is told apart by asking it.
+    let running_loader = found.mode == RockchipMode::Loader || answers_rockusb(&info).await;
+    let info = if running_loader {
+        log_info!(
+            MODULE,
+            "Board already runs a loader; skipping the Maskrom upload"
+        );
+        info
+    } else {
+        let soc = socs::find_by_maskrom_pid(found.product_id).ok_or_else(|| {
+            format!(
+                "{TAG_ROCKUSB_UNSUPPORTED_SOC} no loader for Maskrom PID {:#06x}",
+                found.product_id
+            )
+        })?;
+        check_same_family(image_family, soc)?;
+        let entries = loader::ensure_loader(soc).await?;
+        state.ensure_not_cancelled()?;
 
-            set_stage(&state, STAGE_LOADER);
-            upload_loader(&info, soc, &entries).await?;
-            state.ensure_not_cancelled()?;
+        set_stage(&state, STAGE_LOADER);
+        upload_loader(&info, soc, &entries).await?;
+        state.ensure_not_cancelled()?;
 
-            set_stage(&state, STAGE_RECONNECTING);
-            wait_for_loader_mode(req.device_path, &state).await?
-        }
+        set_stage(&state, STAGE_RECONNECTING);
+        wait_for_loader(req.device_path, &state).await?
     };
 
     let mut device = open_with_retry(&info).await?;
@@ -275,17 +281,45 @@ async fn upload_loader(
     Ok(())
 }
 
-/// Wait for the board on the same port to come back running usbplug.
-async fn wait_for_loader_mode(path: &str, state: &FlashState) -> Result<DeviceInfo, String> {
+/// True when the device answers a rockusb bulk command, as usbplug and U-Boot rockusb do and the
+/// boot ROM doesn't. The probe gets its own handle, so a dropped transfer can't linger into the flash.
+async fn answers_rockusb(info: &DeviceInfo) -> bool {
+    let Ok(mut device) = open(info).await else {
+        return false;
+    };
+    let probe = Duration::from_millis(cfg::PROBE_TIMEOUT_MS);
+    match tokio::time::timeout(probe, device.flash_info()).await {
+        Ok(Ok(flash)) => {
+            log_info!(
+                MODULE,
+                "Board answers rockusb ({} sectors on its current storage)",
+                flash.sectors()
+            );
+            true
+        }
+        Ok(Err(e)) => {
+            log_info!(MODULE, "Board doesn't answer rockusb: {}", e);
+            false
+        }
+        Err(_) => {
+            log_info!(MODULE, "Board doesn't answer rockusb within {:?}", probe);
+            false
+        }
+    }
+}
+
+/// Wait for the board on the same port to come back running usbplug, whatever its descriptor says.
+async fn wait_for_loader(path: &str, state: &FlashState) -> Result<DeviceInfo, String> {
     let deadline = Instant::now() + Duration::from_secs(cfg::REENUMERATE_TIMEOUT_SECS);
     loop {
         state.ensure_not_cancelled()?;
         if let Ok((info, found)) = detect::resolve(path) {
-            if found.mode == RockchipMode::Loader {
+            if answers_rockusb(&info).await {
                 log_info!(
                     MODULE,
-                    "Board is back in Loader mode (PID {:#06x})",
-                    found.product_id
+                    "Board is back running its loader (PID {:#06x}, bcdUSB says {:?})",
+                    found.product_id,
+                    found.mode
                 );
                 return Ok(info);
             }

@@ -68,6 +68,9 @@ pub mod rockusb {
 
     /// Re-scan interval while waiting for that (milliseconds)
     pub const REENUMERATE_POLL_MS: u64 = 250;
+
+    /// How long a board gets to answer the rockusb probe that tells a running loader from the boot ROM (milliseconds)
+    pub const PROBE_TIMEOUT_MS: u64 = 2000;
 }
 
 /// Download and decompression settings

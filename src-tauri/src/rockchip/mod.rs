@@ -46,6 +46,7 @@ pub const STAGE_RESETTING: &str = "resetting";
 pub const STAGE_COMPLETE: &str = "complete";
 
 /// What the board's USB stack is running, from bit 0 of `bcdUSB` (as rkdeveloptool and xrock read it).
+/// Only a hint: some loaders (RK3576 usbplug) keep the boot ROM's descriptor, so the flash asks the board.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RockchipMode {
