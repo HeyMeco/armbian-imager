@@ -370,8 +370,8 @@ pub async fn probe_board_storages(path: &str) -> Result<Option<Vec<StorageInfo>>
 }
 
 /// The storages a running loader reaches, with sizes. The one it already sits on is read first,
-/// with no switch, so it is listed even when the loader can't switch back to it (RK3576 usbplug
-/// rescans SCSI on every switch to UFS). The others are tried in turn, then the board is put back.
+/// with no switch. The others are tried in turn and the board put back, except from UFS/SATA:
+/// RK3576 usbplug can't switch back to SCSI, so a board starting there is never moved.
 async fn probe_storages(device: &mut Device) -> Result<Vec<StorageInfo>, String> {
     let can_switch = loader_can_switch(device).await?;
     let original = match with_timeout(device.storage()).await? {
@@ -394,7 +394,9 @@ async fn probe_storages(device: &mut Device) -> Result<Vec<StorageInfo>, String>
     if let Some(storage) = start {
         push_size(device, storage, &mut found).await?;
     }
-    if !can_switch {
+    // Leaving SCSI is one-way on RK3576 usbplug: the switch back rescans SCSI and fails, which
+    // strands the board on another storage. Off a SCSI start, only the starting storage is sized.
+    if !can_switch || start == Some(BoardStorage::Ufs) {
         return Ok(found);
     }
 
